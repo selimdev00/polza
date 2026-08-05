@@ -10,6 +10,46 @@ function formatRating(rating: number | null): string {
   return rating === null ? '-' : rating.toFixed(1);
 }
 
+function ChevronLeftIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      className="h-4 w-4"
+    >
+      <path
+        d="M12.5 5.5L8 10l4.5 4.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      className="h-4 w-4"
+    >
+      <path
+        d="M7.5 5.5L12 10l-4.5 4.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 // Схему проверяем ещё раз перед рендером, хотя normalizeSite уже отсекает
 // мусор при загрузке. Значение приходит из чужой выгрузки, а href с
 // javascript: react сам по себе не блокирует: экранируется текст, а не
@@ -147,33 +187,57 @@ export default async function CompaniesPage({
       </div>
 
       {pageCount > 1 && (
-        <nav className="relative z-30 mt-4 flex shrink-0 items-center justify-between border-t border-neutral-200 bg-white pt-4 text-sm dark:border-neutral-800 dark:bg-neutral-950">
-          <a
-            href={pageHref(safePage - 1)}
-            aria-disabled={safePage <= 1}
-            className={
-              safePage <= 1
-                ? 'pointer-events-none text-neutral-300 dark:text-neutral-700'
-                : 'text-blue-600 hover:underline dark:text-blue-400'
-            }
-          >
-            Назад
-          </a>
-          <span className="text-neutral-500">
-            Страница {safePage} из {pageCount}
-          </span>
-          <a
-            href={pageHref(safePage + 1)}
-            aria-disabled={safePage >= pageCount}
-            className={
-              safePage >= pageCount
-                ? 'pointer-events-none text-neutral-300 dark:text-neutral-700'
-                : 'text-blue-600 hover:underline dark:text-blue-400'
-            }
-          >
-            Вперёд
-          </a>
-        </nav>
+        // Сама полоса растянута на всю ширину страницы (относительно
+        // области просмотра, а не только контейнера страницы), а внутренний
+        // <nav> ограничен тем же max-w и отступами, что и main, - поэтому
+        // элементы управления не расползаются к краям на широких экранах.
+        // relative + left-1/2 + -translate-x-1/2 позиционируют полосу, что
+        // заодно даёт ей настоящий z-index из шкалы слоёв выше (z-30).
+        <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+          <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 text-sm">
+            {safePage <= 1 ? (
+              // aria-disabled на ссылке не мешает Enter/Space активировать её
+              // с клавиатуры - pointer-events-none блокирует только мышь.
+              // Поэтому в отключённом состоянии это не ссылка, а span: у неё
+              // нет href и она не получает фокус вовсе.
+              <span
+                aria-disabled="true"
+                className="flex items-center gap-1 text-neutral-300 dark:text-neutral-700"
+              >
+                <ChevronLeftIcon />
+                Назад
+              </span>
+            ) : (
+              <a
+                href={pageHref(safePage - 1)}
+                className="flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+              >
+                <ChevronLeftIcon />
+                Назад
+              </a>
+            )}
+            <span className="text-neutral-500">
+              Страница {safePage} из {pageCount}
+            </span>
+            {safePage >= pageCount ? (
+              <span
+                aria-disabled="true"
+                className="flex items-center gap-1 text-neutral-300 dark:text-neutral-700"
+              >
+                Вперёд
+                <ChevronRightIcon />
+              </span>
+            ) : (
+              <a
+                href={pageHref(safePage + 1)}
+                className="flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Вперёд
+                <ChevronRightIcon />
+              </a>
+            )}
+          </nav>
+        </div>
       )}
     </main>
   );

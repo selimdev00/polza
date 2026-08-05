@@ -2,4 +2,47 @@
 
 :root {
   color-scheme: light dark;
+
+  /*
+    Цвета скроллбара вынесены в переменные, потому что тема сейчас только
+    тёмная - когда добавится светлая, здесь понадобится вариант (например,
+    через prefers-color-scheme: light), и тогда достаточно будет переопределить
+    эти переменные, а не переписывать правила ниже.
+  */
+  --scrollbar-track: #171717;
+  --scrollbar-thumb: #525252;
+  --scrollbar-thumb-hover: #737373;
+}
+
+/*
+  Единое оформление скроллбара для всех прокручиваемых областей страницы
+  (область таблицы, список городов и любые будущие похожие места) - правило
+  задано один раз здесь, а не в каждом компоненте отдельно.
+  scrollbar-width/scrollbar-color - для Firefox, ::-webkit-scrollbar-* - для
+  Chromium и Safari. Ширина/высота держится на уровне 10px, чтобы за
+  скроллбар было удобно ухватиться мышью, а сам ползунок всегда виден
+  (не только при наведении), просто темнее без hover и светлее с ним.
+*/
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
