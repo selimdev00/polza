@@ -107,7 +107,17 @@ export default async function CompaniesPage({
         список городов. Если понадобится новый слой - продолжайте эту шкалу,
         не вставляйте соседние числа между существующими.
       */}
-      <header className="relative z-30 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
+      {/*
+        items-stretch (по умолчанию для flex, поэтому явно не указан) делает
+        левый и правый блоки шапки одной высоты - по высоте более высокого,
+        левого, с заголовком и счётчиком в две строки. Ряд контролов внутри
+        Filters прижат к низу этой общей высоты (items-end внутри самого
+        компонента), а не центрирован - иначе он "плавает" между строк текста
+        слева. При переносе на узких экранах каждый блок остаётся на своей
+        строке и получает свою собственную высоту - выравнивание тут просто
+        не участвует, ломаться нечему.
+      */}
+      <header className="relative z-30 flex shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
           <p className="mt-1 text-sm text-neutral-500">
@@ -194,7 +204,7 @@ export default async function CompaniesPage({
         // relative + left-1/2 + -translate-x-1/2 позиционируют полосу, что
         // заодно даёт ей настоящий z-index из шкалы слоёв выше (z-30).
         <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-          <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 text-sm">
+          <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-2 text-sm">
             {safePage <= 1 ? (
               // aria-disabled на ссылке не мешает Enter/Space активировать её
               // с клавиатуры - pointer-events-none блокирует только мышь.

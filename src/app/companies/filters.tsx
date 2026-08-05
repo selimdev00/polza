@@ -102,7 +102,7 @@ export function Filters({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-end gap-3">
       <div className="relative">
         <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
           <SearchIcon />
@@ -140,12 +140,18 @@ export function Filters({
         </button>
       )}
 
-      <span
-        aria-live="polite"
-        className={`text-sm text-neutral-400 ${isPending ? 'opacity-100' : 'opacity-0'}`}
-      >
-        обновляем
-      </span>
+      {/*
+        Рендерим индикатор только пока идёт переход, а не держим его в DOM
+        постоянно с opacity-0. Раньше он всегда резервировал ширину в конце
+        строки, из-за чего последний видимый контрол (выбор города) не
+        дотягивался до правого края шапки/таблицы. aria-live="polite" на
+        свежесмонтированном элементе экранные чтецы всё равно озвучивают.
+      */}
+      {isPending && (
+        <span aria-live="polite" className="text-sm text-neutral-400">
+          обновляем
+        </span>
+      )}
     </div>
   );
 }
