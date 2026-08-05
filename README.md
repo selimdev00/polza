@@ -1,4 +1,4 @@
-# polza-test-task
+# polza
 
 ## Что это
 
@@ -299,7 +299,7 @@ docker exec polza-db psql -U polza -d polza -c "EXPLAIN ANALYZE SELECT id FROM c
 ## Тесты
 
 ```
-> polza-test-task@1.0.0 test
+> polza@1.0.0 test
 > vitest run --maxWorkers=3
 
  Test Files  5 passed (5)
