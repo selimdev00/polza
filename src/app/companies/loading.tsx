@@ -17,7 +17,7 @@ export default function CompaniesLoading() {
   // вертикального скачка.
   return (
     <main className="mx-auto flex h-dvh max-w-[1600px] flex-col px-4 pt-6 sm:px-6">
-      <header className="relative z-30 flex shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
+      <header className="relative z-30 flex min-h-[var(--chrome-bar-height)] shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
           <SkeletonBlock className="mt-2 h-4 w-40" />
@@ -82,7 +82,7 @@ export default function CompaniesLoading() {
         иначе после загрузки данных высота страницы дополнительно скакнёт.
       */}
       <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 bg-white dark:bg-neutral-950">
-        <nav className="mx-auto flex max-w-[1600px] items-center justify-between border-t border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800 sm:px-6">
+        <nav className="mx-auto flex min-h-[var(--chrome-bar-height)] max-w-[1600px] items-center justify-between border-t border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800 sm:px-6">
           <SkeletonBlock className="h-4 w-16" />
           <SkeletonBlock className="h-4 w-24" />
           <SkeletonBlock className="h-4 w-16" />

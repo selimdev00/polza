@@ -188,7 +188,7 @@ export default async function CompaniesPage({
         не участвует, ломаться нечему.
       */}
       <PendingProvider>
-      <header className="relative z-30 flex shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
+      <header className="relative z-30 flex min-h-[var(--chrome-bar-height)] shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
@@ -346,7 +346,23 @@ export default async function CompaniesPage({
         // позиционируют полосу, что заодно даёт ей настоящий z-index из шкалы
         // слоёв выше (z-30).
         <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 bg-white dark:bg-neutral-950">
-          <nav className="mx-auto flex max-w-[1600px] items-center justify-between border-t border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800 sm:px-6">
+          {/*
+            min-h-[var(--chrome-bar-height)] - та же переменная, что у
+            <header> выше (см. globals.css) - делает полосу пагинации той же
+            высоты, что и шапка в её обычном, однострочном состоянии.
+            Содержимое полосы (одна строка "Назад / Страница X из Y /
+            Вперёд") короче этой высоты, поэтому именно здесь min-height
+            добавляет пространство; items-center распределяет разницу
+            поровну сверху и снизу поверх py-2, так что отступ остаётся
+            визуально симметричным, а не смещается в одну сторону.
+            На узких экранах, где ряд контролов шапки переносится под
+            заголовок и она становится выше этого значения, полоса
+            пагинации не переносится (в ней всего три коротких элемента) и
+            остаётся на базовой высоте - то есть точное совпадение высот
+            гарантировано только пока шапка не перенеслась. См. подробный
+            комментарий у --chrome-bar-height в globals.css.
+          */}
+          <nav className="mx-auto flex min-h-[var(--chrome-bar-height)] max-w-[1600px] items-center justify-between border-t border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800 sm:px-6">
             {safePage <= 1 ? (
               // aria-disabled на ссылке не мешает Enter/Space активировать её
               // с клавиатуры - pointer-events-none блокирует только мышь.
