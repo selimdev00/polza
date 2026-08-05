@@ -7,6 +7,10 @@
     "allowJs": false,
     "strict": true,
     "noEmit": true,
+    // Скрипты импортируют друг друга с явным расширением ('./db.ts'), чтобы
+    // их можно было запускать через tsx напрямую. Без этого флага tsc
+    // ругается TS5097. Работает только вместе с noEmit.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
