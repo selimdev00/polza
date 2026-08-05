@@ -1,0 +1,36 @@
+{
+  "name": "polza-test-task",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "migrate": "tsx --env-file=.env scripts/migrate.ts",
+    "load:companies": "tsx --env-file=.env scripts/load-companies.ts",
+    "load:review": "tsx --env-file=.env scripts/load-review.ts",
+    "queries": "tsx --env-file=.env scripts/run-queries.ts",
+    "report:anomalies": "tsx --env-file=.env scripts/report-anomalies.ts",
+    "test": "vitest run --maxWorkers=3",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.3.0",
+    "pg": "8.22.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.6",
+    "@types/react": "19.2.8",
+    "@types/react-dom": "^19.2.4",
+    "postcss": "8.5.6",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.6",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

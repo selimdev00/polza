@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: polza-db
+    environment:
+      POSTGRES_USER: polza
+      POSTGRES_PASSWORD: polza
+      POSTGRES_DB: polza
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - polza-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polza -d polza"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  polza-pgdata:
