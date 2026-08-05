@@ -37,8 +37,17 @@ Postgres на каждый клик по пагинации/фильтрам. К
 позже чем через 5 минут, но чтобы увидеть свежие данные сразу:
 
 ```bash
-curl -X POST http://localhost:3000/api/revalidate-companies
+curl -X POST http://localhost:3000/api/revalidate-companies \
+  -H "x-revalidate-secret: $REVALIDATE_SECRET"
 ```
+
+Эндпойнт ничего не читает и не меняет в данных, но без защиты кто угодно на
+публичном деплое мог бы дёргать его бесконечно, заставляя каждый следующий
+запрос идти в Postgres вместо кэша - поэтому он требует заголовок
+`x-revalidate-secret`, совпадающий с `REVALIDATE_SECRET` из `.env` (см.
+`.env.example`). Локально, пока `NODE_ENV` не `production`, секрет можно не
+задавать вовсе - эндпойнт тогда работает без него, как раньше. На проде без
+заданного `REVALIDATE_SECRET` эндпойнт отказывает всегда.
 
 ## Живая версия
 
