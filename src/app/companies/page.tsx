@@ -307,13 +307,20 @@ export default async function CompaniesPage({
 
       {pageCount > 1 && (
         // Сама полоса растянута на всю ширину страницы (относительно
-        // области просмотра, а не только контейнера страницы), а внутренний
-        // <nav> ограничен тем же max-w и отступами, что и main, - поэтому
-        // элементы управления не расползаются к краям на широких экранах.
-        // relative + left-1/2 + -translate-x-1/2 позиционируют полосу, что
-        // заодно даёт ей настоящий z-index из шкалы слоёв выше (z-30).
-        <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-          <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-2 text-sm sm:px-6">
+        // области просмотра, а не только контейнера страницы) - это остаётся:
+        // фон должен доходить до краёв экрана, чтобы строки таблицы не
+        // просвечивали под полосой при resize/bounce-скролле на мобильных.
+        // А вот верхняя граница (разделитель) раньше была на этом же
+        // растянутом на весь экран элементе - из-за этого линия шла от края
+        // до края вьюпорта, а не совпадала с краями контейнера, как у
+        // таблицы. Теперь граница переехала на сам <nav>, у которого тот же
+        // max-w и центрирование, что у main, - поэтому её концы совпадают с
+        // левым и правым краем таблицы на любой ширине экрана, а не зависят
+        // от жёсткого значения ширины. relative + left-1/2 + -translate-x-1/2
+        // позиционируют полосу, что заодно даёт ей настоящий z-index из шкалы
+        // слоёв выше (z-30).
+        <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 bg-white dark:bg-neutral-950">
+          <nav className="mx-auto flex max-w-[1600px] items-center justify-between border-t border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800 sm:px-6">
             {safePage <= 1 ? (
               // aria-disabled на ссылке не мешает Enter/Space активировать её
               // с клавиатуры - pointer-events-none блокирует только мышь.

@@ -11,8 +11,12 @@ function SkeletonBlock({ className }: { className: string }) {
 }
 
 export default function CompaniesLoading() {
+  // px-4/pt-6/sm:px-6 без pb-6 и граница пагинации на <nav>, а не на внешней
+  // полосе - повторяют актуальную разметку CompaniesPage (см. комментарии
+  // там же), чтобы после загрузки не было ни горизонтального, ни
+  // вертикального скачка.
   return (
-    <main className="mx-auto flex h-dvh max-w-[1600px] flex-col px-6 py-6">
+    <main className="mx-auto flex h-dvh max-w-[1600px] flex-col px-4 pt-6 sm:px-6">
       <header className="relative z-30 flex shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
@@ -77,8 +81,8 @@ export default function CompaniesLoading() {
         страницу это 48 страниц), поэтому скелет тоже её резервирует -
         иначе после загрузки данных высота страницы дополнительно скакнёт.
       */}
-      <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-        <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-2 text-sm">
+      <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 bg-white dark:bg-neutral-950">
+        <nav className="mx-auto flex max-w-[1600px] items-center justify-between border-t border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800 sm:px-6">
           <SkeletonBlock className="h-4 w-16" />
           <SkeletonBlock className="h-4 w-24" />
           <SkeletonBlock className="h-4 w-16" />
