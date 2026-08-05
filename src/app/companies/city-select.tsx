@@ -179,7 +179,7 @@ export function CitySelect({
   const activeId = open ? `${baseId}-option-${activeIndex}` : undefined;
 
   return (
-    <div ref={containerRef} className="relative w-56 text-sm">
+    <div ref={containerRef} className="relative w-full text-sm sm:w-56">
       <button
         ref={triggerRef}
         type="button"

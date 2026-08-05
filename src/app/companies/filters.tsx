@@ -106,8 +106,12 @@ export function Filters({
   }
 
   return (
+    // flex-wrap - контролы переносятся на свою строку, когда не помещаются;
+    // на телефоне поиск и выбор города сами становятся w-full (см. ниже), так
+    // что каждый неизбежно занимает отдельную строку - ряд стекает в столбец
+    // без отдельного брейкпоинта на этот случай.
     <div className="flex flex-wrap items-end gap-3">
-      <div className="relative">
+      <div className="relative w-full sm:w-64">
         <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
           <SearchIcon />
         </span>
@@ -117,7 +121,7 @@ export function Filters({
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Поиск по названию"
           aria-label="Поиск по названию"
-          className="w-64 rounded-md border border-neutral-300 py-2 pl-9 pr-8 text-sm outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600"
+          className="w-full rounded-md border border-neutral-300 py-2 pl-9 pr-8 text-sm outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600"
         />
         {query && (
           <button

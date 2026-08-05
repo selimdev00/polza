@@ -92,8 +92,52 @@ export default async function CompaniesPage({
     return query ? `/companies?${query}` : '/companies';
   }
 
+  const isEmpty = rows.length === 0;
+  // cities не зависит от фильтров q/city (см. listCities), поэтому пустой
+  // список городов однозначно значит: в companies вообще нет строк, а не
+  // что фильтр просто ничего не нашёл. Отдельный запрос "сколько всего в
+  // таблице" ради этого не нужен - тот же сигнал уже есть в уже загруженных
+  // данных. Значение общее для табличной и карточной (мобильной) раскладок,
+  // поэтому вычисляется один раз здесь, а не в каждой из них отдельно.
+  const noDataAtAll = cities.length === 0;
+  const emptyState = noDataAtAll ? (
+    <>
+      <p className="text-base font-medium text-neutral-700 dark:text-neutral-300">
+        Данных ещё нет
+      </p>
+      <p className="mt-2 text-sm text-neutral-500">
+        Похоже, загрузчики ещё не запускались. Выполните{' '}
+        <code className="rounded bg-neutral-100 px-1 py-0.5 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+          npm run load:companies
+        </code>{' '}
+        и обновите страницу.
+      </p>
+    </>
+  ) : (
+    <>
+      <p className="text-base font-medium text-neutral-700 dark:text-neutral-300">
+        Ничего не найдено
+      </p>
+      <p className="mt-2 text-sm text-neutral-500">
+        {q && city
+          ? `По запросу «${q}» в городе «${city}» компаний нет.`
+          : q
+            ? `По запросу «${q}» компаний нет.`
+            : city
+              ? `В городе «${city}» компаний нет.`
+              : 'По заданным условиям компаний нет.'}
+      </p>
+      <a
+        href="/companies"
+        className="mt-4 inline-block text-sm text-blue-600 underline underline-offset-2 transition-colors duration-150 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+      >
+        Сбросить фильтры
+      </a>
+    </>
+  );
+
   return (
-    <main className="mx-auto flex h-dvh max-w-[1600px] flex-col px-6 py-6">
+    <main className="mx-auto flex h-dvh max-w-[1600px] flex-col px-4 py-6 sm:px-6">
       {/*
         Порядок слоёв на странице (снизу вверх). z-index работает только у
         позиционированных элементов, поэтому у каждого уровня ниже задан явный
@@ -134,7 +178,17 @@ export default async function CompaniesPage({
       </header>
 
       <TableRegion>
-        <table className="w-full min-w-[54rem] border-collapse text-sm">
+        {/*
+          Восемь колонок таблицы на телефоне не сжать без горизонтальной
+          прокрутки, а листать список компаний вбок пальцем неудобнее, чем
+          вертикально. Поэтому ниже sm (640px) таблица (display: none)
+          заменяется карточным списком - тем же rows, но каждая компания
+          в одной карточке из подписанных полей, а не строкой из восьми
+          колонок. Название, категория и город остаются на виду всегда;
+          адрес и телефон - в отдельной, менее заметной строке карточки,
+          и вовсе не рендерятся, если оба поля пустые.
+        */}
+        <table className="hidden w-full min-w-[54rem] border-collapse text-sm sm:table">
           <thead className="sticky top-0 z-10 bg-neutral-50 text-left dark:bg-neutral-900">
             <tr>
               <th className="px-3 py-2 font-medium">Название</th>
@@ -148,50 +202,10 @@ export default async function CompaniesPage({
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {isEmpty ? (
               <tr>
                 <td colSpan={8} className="px-3 py-16 text-center">
-                  {cities.length === 0 ? (
-                    // cities не зависит от фильтров q/city, поэтому пустой
-                    // список городов однозначно значит: в companies вообще
-                    // нет строк, а не что фильтр просто ничего не нашёл.
-                    // Отдельный запрос "сколько всего в таблице" ради этого
-                    // не нужен - тот же сигнал уже есть в уже загруженных
-                    // данных.
-                    <>
-                      <p className="text-base font-medium text-neutral-700 dark:text-neutral-300">
-                        Данных ещё нет
-                      </p>
-                      <p className="mt-2 text-sm text-neutral-500">
-                        Похоже, загрузчики ещё не запускались. Выполните{' '}
-                        <code className="rounded bg-neutral-100 px-1 py-0.5 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                          npm run load:companies
-                        </code>{' '}
-                        и обновите страницу.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-base font-medium text-neutral-700 dark:text-neutral-300">
-                        Ничего не найдено
-                      </p>
-                      <p className="mt-2 text-sm text-neutral-500">
-                        {q && city
-                          ? `По запросу «${q}» в городе «${city}» компаний нет.`
-                          : q
-                            ? `По запросу «${q}» компаний нет.`
-                            : city
-                              ? `В городе «${city}» компаний нет.`
-                              : 'По заданным условиям компаний нет.'}
-                      </p>
-                      <a
-                        href="/companies"
-                        className="mt-4 inline-block text-sm text-blue-600 underline underline-offset-2 transition-colors duration-150 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        Сбросить фильтры
-                      </a>
-                    </>
-                  )}
+                  {emptyState}
                 </td>
               </tr>
             ) : (
@@ -237,6 +251,47 @@ export default async function CompaniesPage({
             )}
           </tbody>
         </table>
+
+        <div className="sm:hidden">
+          {isEmpty ? (
+            <div className="px-3 py-16 text-center">{emptyState}</div>
+          ) : (
+            <ul className="divide-y divide-neutral-100 dark:divide-neutral-900">
+              {rows.map((company) => {
+                const siteUrl = safeSiteUrl(company.site);
+                const secondaryLine = [company.address, company.phone]
+                  .filter((value): value is string => Boolean(value))
+                  .join(' · ');
+                return (
+                  <li key={company.id} className="px-3 py-3">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-medium">{company.name}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+                        {formatRating(company.rating)} · {company.reviews_count}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
+                      {company.category ?? '-'} · {company.city}
+                    </div>
+                    {secondaryLine && (
+                      <div className="mt-1 text-xs text-neutral-400">{secondaryLine}</div>
+                    )}
+                    {siteUrl && (
+                      <a
+                        href={siteUrl}
+                        rel="noopener noreferrer nofollow"
+                        target="_blank"
+                        className="mt-1 inline-block text-xs text-blue-600 underline underline-offset-2 transition-colors duration-150 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        {siteUrl.replace(/^https?:\/\//, '')}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </TableRegion>
 
       {pageCount > 1 && (
@@ -247,7 +302,7 @@ export default async function CompaniesPage({
         // relative + left-1/2 + -translate-x-1/2 позиционируют полосу, что
         // заодно даёт ей настоящий z-index из шкалы слоёв выше (z-30).
         <div className="relative left-1/2 z-30 mt-4 w-screen -translate-x-1/2 shrink-0 border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-          <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-2 text-sm">
+          <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-2 text-sm sm:px-6">
             {safePage <= 1 ? (
               // aria-disabled на ссылке не мешает Enter/Space активировать её
               // с клавиатуры - pointer-events-none блокирует только мышь.
