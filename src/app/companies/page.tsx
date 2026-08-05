@@ -1,4 +1,16 @@
-import { PAGE_SIZE, listCities, listCompanies } from '@/lib/companies';
+import {
+  DEFAULT_SORT_DIR,
+  DEFAULT_SORT_KEY,
+  PAGE_SIZE,
+  listCategories,
+  listCities,
+  listCompanies,
+  resolvePageSize,
+  resolveSortDir,
+  resolveSortKey,
+  type SortDir,
+  type SortKey,
+} from '@/lib/companies';
 import { getAnomalyJournal, type CompanyIssue } from '@/lib/anomalies';
 import { AnomaliesModal } from './anomalies-modal';
 import { Filters } from './filters';
@@ -57,6 +69,29 @@ function ChevronRightIcon() {
   );
 }
 
+// Стрелка вверх/вниз у заголовка активной колонки сортировки. Не рисуется
+// вовсе, если колонка не активна (см. SortableHeader) - двух одинаковых
+// нейтральных иконок на восьми колонках были бы просто визуальным шумом.
+function SortIcon({ direction }: { direction: SortDir }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      className="h-3.5 w-3.5 shrink-0"
+    >
+      <path
+        d={direction === 'asc' ? 'M5.5 12.5L10 8l4.5 4.5' : 'M5.5 7.5L10 12l4.5-4.5'}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 // Схему проверяем ещё раз перед рендером, хотя normalizeSite уже отсекает
 // мусор при загрузке. Значение приходит из чужой выгрузки, а href с
 // javascript: react сам по себе не блокирует: экранируется текст, а не
@@ -70,16 +105,36 @@ function safeSiteUrl(site: string | null): string | null {
 export default async function CompaniesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; city?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    city?: string;
+    category?: string;
+    hasSite?: string;
+    sort?: string;
+    dir?: string;
+    limit?: string;
+    page?: string;
+  }>;
 }) {
   const params = await searchParams;
   const q = (params.q ?? '').trim();
   const city = (params.city ?? '').trim();
+  const category = (params.category ?? '').trim();
+  const hasSite = params.hasSite === '1';
+  // resolveSortKey/resolveSortDir/resolvePageSize - единственное место, где
+  // значения из URL превращаются в то, что реально уйдёт в SQL (см. подробный
+  // разбор в src/lib/companies.ts). Ничего, что пришло сырым текстом из
+  // params, ниже этой строки уже не используется.
+  const sort = resolveSortKey(params.sort);
+  const dir = resolveSortDir(params.dir);
+  const pageSize = resolvePageSize(params.limit);
   const page = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
+  const isDefaultSort = sort === DEFAULT_SORT_KEY && dir === DEFAULT_SORT_DIR;
 
-  const [{ rows, total, page: safePage }, cities, journal] = await Promise.all([
-    listCompanies({ q, city, page }),
+  const [{ rows, total, page: safePage }, cities, categories, journal] = await Promise.all([
+    listCompanies({ q, city, category, hasSite, sort, dir, pageSize, page }),
     listCities(),
+    listCategories(),
     getAnomalyJournal(),
   ]);
 
@@ -92,19 +147,57 @@ export default async function CompaniesPage({
     return journal.byExtId[extId] ?? noIssues;
   }
 
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
   // Эффективная страница приходит из listCompanies - там она зажата до того,
   // как ушла в offset, так что данные и подпись всегда об одной странице.
-  const from = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const to = Math.min(safePage * PAGE_SIZE, total);
+  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = Math.min(safePage * pageSize, total);
 
-  function pageHref(target: number): string {
+  // Единая точка сборки ссылок для пагинации и заголовков сортировки: несёт
+  // все текущие q/city/category/hasSite/limit дальше без изменений, а
+  // page/sort/dir - то, что явно передано в overrides. Опущенные из
+  // overrides sort/dir берутся из текущего resolved-состояния (sort/dir выше)
+  // - то есть смена страницы не сбрасывает сортировку, а смена сортировки
+  // (см. sortHref) явно просит page=1.
+  function buildHref(overrides: { page?: number; sort?: SortKey; dir?: SortDir }): string {
     const next = new URLSearchParams();
     if (q) next.set('q', q);
     if (city) next.set('city', city);
+    if (category) next.set('category', category);
+    if (hasSite) next.set('hasSite', '1');
+    if (pageSize !== PAGE_SIZE) next.set('limit', String(pageSize));
+
+    const nextSort = overrides.sort ?? sort;
+    const nextDir = overrides.dir ?? dir;
+    if (nextSort !== DEFAULT_SORT_KEY || nextDir !== DEFAULT_SORT_DIR) {
+      next.set('sort', nextSort);
+      next.set('dir', nextDir);
+    }
+
+    const target = overrides.page ?? safePage;
     if (target > 1) next.set('page', String(target));
+
     const query = next.toString();
     return query ? `/companies?${query}` : '/companies';
+  }
+
+  function pageHref(target: number): string {
+    return buildHref({ page: target });
+  }
+
+  // Клик по заголовку колонки идёт по циклу восходящая -> нисходящая ->
+  // дефолт (см. описание в задаче). Если колонка ещё не активна - сразу
+  // восходящая. Любая смена сортировки сбрасывает на первую страницу -
+  // список, отсортированный иначе, скорее всего не имеет отношения к той
+  // странице, на которой стоял пользователь.
+  function sortHref(key: SortKey): string {
+    if (sort !== key) {
+      return buildHref({ sort: key, dir: 'asc', page: 1 });
+    }
+    if (dir === 'asc') {
+      return buildHref({ sort: key, dir: 'desc', page: 1 });
+    }
+    return buildHref({ sort: DEFAULT_SORT_KEY, dir: DEFAULT_SORT_DIR, page: 1 });
   }
 
   const isEmpty = rows.length === 0;
@@ -204,7 +297,16 @@ export default async function CompaniesPage({
           </p>
         </div>
 
-        <Filters cities={cities} q={q} city={city} />
+        <Filters
+          cities={cities}
+          categories={categories}
+          q={q}
+          city={city}
+          category={category}
+          hasSite={hasSite}
+          pageSize={pageSize}
+          hasActiveSort={!isDefaultSort}
+        />
       </header>
 
       <TableRegion>
@@ -221,14 +323,47 @@ export default async function CompaniesPage({
         <table className="hidden w-full min-w-[54rem] border-collapse text-sm sm:table">
           <thead className="sticky top-0 z-10 bg-neutral-50 text-left dark:bg-neutral-900">
             <tr>
-              <th className="px-3 py-2 font-medium">Название</th>
-              <th className="px-3 py-2 font-medium">Категория</th>
-              <th className="px-3 py-2 font-medium">Город</th>
-              <th className="px-3 py-2 font-medium">Адрес</th>
-              <th className="px-3 py-2 text-right font-medium">Рейтинг</th>
-              <th className="px-3 py-2 text-right font-medium">Отзывы</th>
-              <th className="px-3 py-2 font-medium">Сайт</th>
-              <th className="px-3 py-2 font-medium">Телефон</th>
+              {(
+                [
+                  { key: 'name' as const, label: 'Название', align: 'left' as const },
+                  { key: 'category' as const, label: 'Категория', align: 'left' as const },
+                  { key: 'city' as const, label: 'Город', align: 'left' as const },
+                  { key: null, label: 'Адрес', align: 'left' as const },
+                  { key: 'rating' as const, label: 'Рейтинг', align: 'right' as const },
+                  { key: 'reviews_count' as const, label: 'Отзывы', align: 'right' as const },
+                  { key: null, label: 'Сайт', align: 'left' as const },
+                  { key: null, label: 'Телефон', align: 'left' as const },
+                ] as const
+              ).map((col) => {
+                if (col.key === null) {
+                  // Адрес/Сайт/Телефон не сортируются и все три выровнены по
+                  // левому краю - align здесь всегда 'left', отдельная
+                  // проверка не нужна (и TS это подтверждает сужением типа).
+                  return (
+                    <th key={col.label} className="px-3 py-2 font-medium">
+                      {col.label}
+                    </th>
+                  );
+                }
+                const isActive = sort === col.key;
+                return (
+                  <th
+                    key={col.label}
+                    aria-sort={isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                    className={`px-3 py-2 font-medium ${col.align === 'right' ? 'text-right' : ''}`}
+                  >
+                    <a
+                      href={sortHref(col.key)}
+                      className={`inline-flex items-center gap-1 transition-colors duration-150 hover:text-neutral-900 dark:hover:text-neutral-100 ${
+                        col.align === 'right' ? 'flex-row-reverse' : ''
+                      } ${isActive ? '' : 'text-neutral-600 dark:text-neutral-400'}`}
+                    >
+                      {col.label}
+                      {isActive && <SortIcon direction={dir} />}
+                    </a>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
