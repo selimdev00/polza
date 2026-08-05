@@ -25,8 +25,45 @@ import { ThemeToggle } from './theme-toggle';
 // нужен. Страница динамическая, потому что зависит от searchParams.
 export const dynamic = 'force-dynamic';
 
-function formatRating(rating: number | null): string {
-  return rating === null ? '-' : rating.toFixed(1);
+// Звезда - чистая декорация рядом с числом, а не самостоятельный источник
+// смысла: подчёркивает, что колонка "Рейтинг" - это оценка, а не просто
+// число. currentColor + приглушённый цвет держат её визуально второстепенной
+// относительно самого значения; aria-hidden убирает её из вывода
+// скринридера - там достаточно числа. Значение и стрелка - через
+// currentColor от родителя, отдельного цвета не задано, как и у остальных
+// мелких иконок на странице (Chevron*, SearchIcon и т.д.).
+function StarIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      className="h-4 w-4 shrink-0 text-neutral-400 dark:text-neutral-500"
+    >
+      <path
+        d="M10 2.75l2.163 4.383 4.837.702-3.5 3.412.826 4.816L10 13.75l-4.326 2.313.826-4.816-3.5-3.412 4.837-.702L10 2.75z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// null - у компании нет рейтинга (79-100 записей в зависимости от текущей
+// загрузки, см. отчёт задачи о сортировке) - рендерит только "-", без
+// звезды: звезда рядом с прочерком читалась бы как "рейтинг есть, просто
+// ноль", а не как "рейтинга нет вовсе" - две разные вещи, которые нельзя
+// путать в интерфейсе для агентства, продающего именно данные о компаниях.
+function RatingValue({ rating }: { rating: number | null }) {
+  if (rating === null) return <>-</>;
+  return (
+    <span className="inline-flex items-center gap-1">
+      {rating.toFixed(1)}
+      <StarIcon />
+    </span>
+  );
 }
 
 function ChevronLeftIcon() {
@@ -402,7 +439,9 @@ export default async function CompaniesPage({
                     <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
                       {company.address ?? '-'}
                     </td>
-                    <td className="px-3 py-2 tabular-nums">{formatRating(company.rating)}</td>
+                    <td className="px-3 py-2 tabular-nums">
+                      <RatingValue rating={company.rating} />
+                    </td>
                     <td className="px-3 py-2 tabular-nums">{company.reviews_count}</td>
                     <td className="px-3 py-2">
                       {siteUrl ? (
@@ -444,8 +483,9 @@ export default async function CompaniesPage({
                         {company.name}
                         <RowIssuesMarker companyName={company.name} issues={issues} />
                       </span>
-                      <span className="shrink-0 text-xs tabular-nums text-neutral-500">
-                        {formatRating(company.rating)} · {company.reviews_count}
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs tabular-nums text-neutral-500">
+                        <RatingValue rating={company.rating} />
+                        <span>· {company.reviews_count}</span>
                       </span>
                     </div>
                     <div className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
