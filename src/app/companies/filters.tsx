@@ -2,7 +2,10 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { PAGE_SIZE, type PageSizeOption } from '@/lib/companies';
+import { CategorySelect } from './category-select';
 import { CitySelect } from './city-select';
+import { PageSizeSelect } from './page-size-select';
 import { usePendingFilters } from './pending-context';
 
 function SearchIcon() {
@@ -41,12 +44,26 @@ function ClearIcon() {
 
 export function Filters({
   cities,
+  categories,
   q,
   city,
+  category,
+  hasSite,
+  pageSize,
+  hasActiveSort,
 }: {
   cities: string[];
+  categories: string[];
   q: string;
   city: string;
+  category: string;
+  hasSite: boolean;
+  pageSize: PageSizeOption;
+  // Сортировка живёт в заголовках таблицы (page.tsx), не здесь - но кнопка
+  // "Сбросить" должна знать о ней, иначе не появится, когда изменена только
+  // сортировка, и ничего из того, что реально знает Filters (q/city/
+  // category/hasSite/pageSize), не тронуто.
+  hasActiveSort: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -66,7 +83,7 @@ export function Filters({
   // сколько бы раз он ни выполнился.
   const lastAppliedQuery = useRef(q);
 
-  function apply(next: { q?: string; city?: string }): void {
+  function apply(next: { q?: string; city?: string; category?: string; hasSite?: boolean }): void {
     const params = new URLSearchParams(searchParams.toString());
 
     if (next.q !== undefined) {
@@ -77,6 +94,14 @@ export function Filters({
     if (next.city !== undefined) {
       if (next.city) params.set('city', next.city);
       else params.delete('city');
+    }
+    if (next.category !== undefined) {
+      if (next.category) params.set('category', next.category);
+      else params.delete('category');
+    }
+    if (next.hasSite !== undefined) {
+      if (next.hasSite) params.set('hasSite', '1');
+      else params.delete('hasSite');
     }
     // Любая смена фильтра возвращает на первую страницу: иначе можно
     // оказаться на 12-й странице результата, где всего две.
@@ -101,8 +126,15 @@ export function Filters({
   }, [query]);
 
   function resetAll(): void {
+    // Сбрасывает буквально всё, включая сортировку, лимит и страницу -
+    // поэтому идёт напрямую на голый pathname, а не через apply(): apply()
+    // трогает только перечисленные ключи и оставила бы sort/dir/limit/page
+    // висеть в URL нетронутыми.
     setQuery('');
-    apply({ q: '', city: '' });
+    lastAppliedQuery.current = '';
+    startTransition(() => {
+      router.replace(pathname);
+    });
   }
 
   return (
@@ -137,7 +169,34 @@ export function Filters({
 
       <CitySelect cities={cities} value={city} onChange={(next) => apply({ city: next })} />
 
-      {(query || city) && (
+      <CategorySelect
+        categories={categories}
+        value={category}
+        onChange={(next) => apply({ category: next })}
+      />
+
+      {/*
+        Только с сайтом - единственный дополнительный тумблер, не пять.
+        Для холодной рассылки компания без сайта менее пригодна к действию
+        (нет площадки, откуда достать почту/соцсети), а сайт заполнен у
+        меньшей доли компаний (890 из 1184), чем телефон (1053 из 1184) - то
+        есть именно он реальнее фильтрует список, а не телефон, который и
+        так есть почти у всех. border-transparent + py-2 - та же формула
+        высоты, что у остальных контролов ряда (см. кнопку "Сбросить" ниже).
+      */}
+      <label className="flex items-center gap-1.5 border border-transparent py-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <input
+          type="checkbox"
+          checked={hasSite}
+          onChange={(event) => apply({ hasSite: event.target.checked })}
+          className="h-4 w-4 rounded border-neutral-300 text-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-neutral-600 dark:bg-neutral-900"
+        />
+        Только с сайтом
+      </label>
+
+      <PageSizeSelect pageSize={pageSize} />
+
+      {(query || city || category || hasSite || pageSize !== PAGE_SIZE || hasActiveSort) && (
         // border-transparent + py-2 повторяют формулу высоты инпута и
         // селектора города (border + py-2 + line-height text-sm = 38px), а
         // не задают её числом напрямую - так все три контрола остаются
