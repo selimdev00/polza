@@ -138,10 +138,16 @@ export function Filters({
       <CitySelect cities={cities} value={city} onChange={(next) => apply({ city: next })} />
 
       {(query || city) && (
+        // border-transparent + py-2 повторяют формулу высоты инпута и
+        // селектора города (border + py-2 + line-height text-sm = 38px), а
+        // не задают её числом напрямую - так все три контрола остаются
+        // одной высоты, даже если шрифт или border-width когда-то изменятся
+        // все разом. Из-за items-end на строке выше одинаковая высота втроём
+        // означает ещё и общую вертикальную середину - не только общий низ.
         <button
           type="button"
           onClick={resetAll}
-          className="flex items-center gap-1 text-sm text-neutral-500 underline underline-offset-2 transition-colors duration-150 hover:text-neutral-800 dark:hover:text-neutral-200"
+          className="flex items-center gap-1 border border-transparent py-2 text-sm text-neutral-500 underline underline-offset-2 transition-colors duration-150 hover:text-neutral-800 dark:hover:text-neutral-200"
         >
           <ClearIcon />
           Сбросить
@@ -154,9 +160,14 @@ export function Filters({
         строки, из-за чего последний видимый контрол (выбор города) не
         дотягивался до правого края шапки/таблицы. aria-live="polite" на
         свежесмонтированном элементе экранные чтецы всё равно озвучивают.
+        border-transparent + py-2 - та же формула высоты, что у остальных
+        контролов строки, по той же причине.
       */}
       {isPending && (
-        <span aria-live="polite" className="animate-fade-in text-sm text-neutral-400">
+        <span
+          aria-live="polite"
+          className="animate-fade-in border border-transparent py-2 text-sm text-neutral-400"
+        >
           обновляем
         </span>
       )}
