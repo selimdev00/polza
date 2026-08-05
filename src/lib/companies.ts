@@ -84,7 +84,31 @@ function buildWhere(
 
   if (q) {
     params.push(`%${q}%`);
-    conditions.push(`name ILIKE $${params.length}`);
+    const p = params.length;
+    // Поиск по шести полям: name, category, city, address, site,
+    // phone_raw. phone хранится нормализованным (+7XXXXXXXXXX, без
+    // разделителей), а phone_raw - как пришло из источника
+    // ("+7 (495) 248-44-40"). Ищем именно phone_raw, а не phone: так
+    // "495" и "(495)" оба находят компанию по коду города, а не только
+    // полный номер без пробелов и скобок. category/address/site/phone_raw
+    // допускают NULL - coalesce(..., '') превращает NULL в '', иначе
+    // ILIKE с NULL слева даёт NULL, а не false, и по одной этой колонке
+    // строка молча выпала бы из OR независимо от совпадения по остальным.
+    //
+    // Одна связанная переменная $p переиспользуется во всех шести
+    // сравнениях вместо шести отдельных параметров с одним и тем же
+    // значением - driver биндит позиционные параметры по номеру, а не по
+    // порядку появления в тексте, так что это не текстовая подстановка.
+    //
+    // Вся группа - в собственных скобках. Без них OR "перетекает" в
+    // соседние AND-условия (city =, category =, site IS NOT NULL) и молча
+    // отключает их всякий раз, когда задан поиск: (a OR b OR c AND d)
+    // читается как (a OR b OR (c AND d)), а не как ((a OR b OR c) AND d).
+    // Это тихо неверный результат, а не ошибка - ни один юнит-тест его не
+    // ловит, потому что каждое условие по отдельности работает верно.
+    conditions.push(
+      `(name ILIKE $${p} OR coalesce(category, '') ILIKE $${p} OR city ILIKE $${p} OR coalesce(address, '') ILIKE $${p} OR coalesce(site, '') ILIKE $${p} OR coalesce(phone_raw, '') ILIKE $${p})`,
+    );
   }
   if (city) {
     params.push(city);
