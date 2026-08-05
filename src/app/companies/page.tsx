@@ -10,6 +10,16 @@ function formatRating(rating: number | null): string {
   return rating === null ? '-' : rating.toFixed(1);
 }
 
+// Схему проверяем ещё раз перед рендером, хотя normalizeSite уже отсекает
+// мусор при загрузке. Значение приходит из чужой выгрузки, а href с
+// javascript: react сам по себе не блокирует: экранируется текст, а не
+// атрибут. Одна проверка на этапе загрузки - единственная точка отказа,
+// и любой будущий путь записи в обход загрузчика её обойдёт.
+function safeSiteUrl(site: string | null): string | null {
+  if (!site) return null;
+  return /^https?:\/\//i.test(site) ? site : null;
+}
+
 export default async function CompaniesPage({
   searchParams,
 }: {
@@ -26,8 +36,12 @@ export default async function CompaniesPage({
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, total);
+  // page может прийти из чужой или устаревшей ссылки и указывать за пределы
+  // результата (например ?page=999999 после того как фильтр сузил выдачу).
+  // Не зажать его здесь - значит показать диапазон, где начало больше конца.
+  const safePage = Math.min(page, pageCount);
+  const from = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const to = Math.min(safePage * PAGE_SIZE, total);
 
   function pageHref(target: number): string {
     const next = new URLSearchParams();
@@ -73,42 +87,45 @@ export default async function CompaniesPage({
                 </td>
               </tr>
             ) : (
-              rows.map((company) => (
-                <tr
-                  key={company.id}
-                  className="border-t border-neutral-100 dark:border-neutral-900"
-                >
-                  <td className="px-3 py-2">{company.name}</td>
-                  <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
-                    {company.category ?? '-'}
-                  </td>
-                  <td className="px-3 py-2">{company.city}</td>
-                  <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
-                    {company.address ?? '-'}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {formatRating(company.rating)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {company.reviews_count}
-                  </td>
-                  <td className="px-3 py-2">
-                    {company.site ? (
-                      <a
-                        href={company.site}
-                        rel="noopener noreferrer nofollow"
-                        target="_blank"
-                        className="text-blue-600 underline underline-offset-2 dark:text-blue-400"
-                      >
-                        {company.site.replace(/^https?:\/\//, '')}
-                      </a>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td className="px-3 py-2 tabular-nums">{company.phone ?? '-'}</td>
-                </tr>
-              ))
+              rows.map((company) => {
+                const siteUrl = safeSiteUrl(company.site);
+                return (
+                  <tr
+                    key={company.id}
+                    className="border-t border-neutral-100 dark:border-neutral-900"
+                  >
+                    <td className="px-3 py-2">{company.name}</td>
+                    <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
+                      {company.category ?? '-'}
+                    </td>
+                    <td className="px-3 py-2">{company.city}</td>
+                    <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
+                      {company.address ?? '-'}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {formatRating(company.rating)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {company.reviews_count}
+                    </td>
+                    <td className="px-3 py-2">
+                      {siteUrl ? (
+                        <a
+                          href={siteUrl}
+                          rel="noopener noreferrer nofollow"
+                          target="_blank"
+                          className="text-blue-600 underline underline-offset-2 dark:text-blue-400"
+                        >
+                          {siteUrl.replace(/^https?:\/\//, '')}
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="px-3 py-2 tabular-nums">{company.phone ?? '-'}</td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -117,10 +134,10 @@ export default async function CompaniesPage({
       {pageCount > 1 && (
         <nav className="mt-4 flex items-center justify-between text-sm">
           <a
-            href={pageHref(page - 1)}
-            aria-disabled={page <= 1}
+            href={pageHref(safePage - 1)}
+            aria-disabled={safePage <= 1}
             className={
-              page <= 1
+              safePage <= 1
                 ? 'pointer-events-none text-neutral-300 dark:text-neutral-700'
                 : 'text-blue-600 hover:underline dark:text-blue-400'
             }
@@ -128,13 +145,13 @@ export default async function CompaniesPage({
             Назад
           </a>
           <span className="text-neutral-500">
-            Страница {page} из {pageCount}
+            Страница {safePage} из {pageCount}
           </span>
           <a
-            href={pageHref(page + 1)}
-            aria-disabled={page >= pageCount}
+            href={pageHref(safePage + 1)}
+            aria-disabled={safePage >= pageCount}
             className={
-              page >= pageCount
+              safePage >= pageCount
                 ? 'pointer-events-none text-neutral-300 dark:text-neutral-700'
                 : 'text-blue-600 hover:underline dark:text-blue-400'
             }

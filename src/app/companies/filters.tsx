@@ -21,7 +21,7 @@ export function Filters({
   // эффекта: в dev App Router монтирует со Strict Mode, и React вызывает
   // эффект на маунте дважды. Флаг-счётчик ("первый рендер") переключается в
   // false на первом из этих двух вызовов, и второй вызов сам решает, что он
-  // уже не первый — debounce всё равно срабатывает и стирает page из URL без
+  // уже не первый - debounce всё равно срабатывает и стирает page из URL без
   // единого действия пользователя. Сравнение по значению идемпотентно: пока
   // query равен последнему применённому значению, эффект ничего не делает,
   // сколько бы раз он ни выполнился.
@@ -33,6 +33,7 @@ export function Filters({
     if (next.q !== undefined) {
       if (next.q) params.set('q', next.q);
       else params.delete('q');
+      lastAppliedQuery.current = next.q;
     }
     if (next.city !== undefined) {
       if (next.city) params.set('city', next.city);
