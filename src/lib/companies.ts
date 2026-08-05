@@ -1,3 +1,6 @@
+import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
+import { COMPANIES_CACHE_REVALIDATE_SECONDS, COMPANIES_CACHE_TAG } from './cache.ts';
 import { getPool } from './db.ts';
 
 export const PAGE_SIZE = 25;
@@ -26,16 +29,16 @@ export interface CompanyFilters {
  * Второй вариант короче, но планировщик на нём не может использовать
  * индексы: предикат перестаёт быть сравнением колонки с константой.
  */
-function buildWhere(filters: CompanyFilters): { clause: string; params: unknown[] } {
+function buildWhere(q: string, city: string): { clause: string; params: unknown[] } {
   const conditions: string[] = [];
   const params: unknown[] = [];
 
-  if (filters.q) {
-    params.push(`%${filters.q}%`);
+  if (q) {
+    params.push(`%${q}%`);
     conditions.push(`name ILIKE $${params.length}`);
   }
-  if (filters.city) {
-    params.push(filters.city);
+  if (city) {
+    params.push(city);
     conditions.push(`city = $${params.length}`);
   }
 
@@ -45,11 +48,21 @@ function buildWhere(filters: CompanyFilters): { clause: string; params: unknown[
   };
 }
 
-export async function listCompanies(
-  filters: CompanyFilters,
+// Сырое чтение из Postgres - без кэша. q/city/page переданы позиционными
+// аргументами, а не одним объектом filters, намеренно: unstable_cache ниже
+// сам включает JSON.stringify(args) вызова в ключ кэша, и React.cache
+// (тоже ниже) дедуплицирует повторные вызовы в пределах одного запроса по
+// значению аргументов - оба механизма работают корректно только если
+// аргументы - примитивы, которые сравниваются по значению, а не общий
+// объект, который сравнивался бы по ссылке (два разных литерала {q, city,
+// page} с одинаковым содержимым для React.cache были бы разными вызовами).
+async function queryCompanies(
+  q: string,
+  city: string,
+  page: number,
 ): Promise<{ rows: Company[]; total: number; page: number }> {
   const pool = getPool();
-  const { clause, params } = buildWhere(filters);
+  const { clause, params } = buildWhere(q, city);
 
   const totalResult = await pool.query<{ count: string }>(
     `SELECT count(*)::text AS count FROM companies ${clause}`,
@@ -63,8 +76,8 @@ export async function listCompanies(
   // offset, вернёт пусто, и над пустой таблицей окажется правдоподобный
   // диапазон - это хуже явной ошибки, потому что выглядит правдой.
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const page = Math.min(Math.max(1, filters.page), pageCount);
-  const offset = (page - 1) * PAGE_SIZE;
+  const safePage = Math.min(Math.max(1, page), pageCount);
+  const offset = (safePage - 1) * PAGE_SIZE;
 
   const rowsResult = await pool.query<Company>(
     `SELECT id, ext_id, name, category, city, address, rating, reviews_count, site, phone
@@ -75,13 +88,49 @@ export async function listCompanies(
     [...params, offset],
   );
 
-  return { rows: rowsResult.rows, total, page };
+  return { rows: rowsResult.rows, total, page: safePage };
 }
 
-export async function listCities(): Promise<string[]> {
+// Межзапросный кэш поверх queryCompanies. Ключ кэша у unstable_cache -
+// комбинация keyParts ('companies-list') и JSON.stringify(args) вызова, то
+// есть каждая уникальная комбинация (q, city, page) получает собственную
+// запись, а не одну на всю таблицу - components/страницы с разными
+// фильтрами никогда не увидят чужой результат. revalidate и tags - общие
+// для companies.ts/anomalies.ts, см. src/lib/cache.ts; сбросить вручную -
+// POST /api/revalidate-companies (после npm run load:companies).
+const cachedQueryCompanies = unstable_cache(queryCompanies, ['companies-list'], {
+  tags: [COMPANIES_CACHE_TAG],
+  revalidate: COMPANIES_CACHE_REVALIDATE_SECONDS,
+});
+
+// React.cache поверх межзапросного кэша - если в пределах одного рендера
+// страницы listCompanies вызовут с теми же q/city/page больше одного раза
+// (сейчас этого не происходит - на /companies один вызов в Promise.all в
+// page.tsx, - но это не повод не защититься на будущее), повторные вызовы
+// схлопнутся в один и не пойдут даже в Data Cache Next.js повторно, не
+// говоря о Postgres.
+const dedupedQueryCompanies = cache(cachedQueryCompanies);
+
+export async function listCompanies(
+  filters: CompanyFilters,
+): Promise<{ rows: Company[]; total: number; page: number }> {
+  return dedupedQueryCompanies(filters.q, filters.city, filters.page);
+}
+
+async function queryCities(): Promise<string[]> {
   const pool = getPool();
   const result = await pool.query<{ city: string }>(
     'SELECT DISTINCT city FROM companies ORDER BY city ASC',
   );
   return result.rows.map((row) => row.city);
 }
+
+const cachedQueryCities = unstable_cache(queryCities, ['companies-cities'], {
+  tags: [COMPANIES_CACHE_TAG],
+  revalidate: COMPANIES_CACHE_REVALIDATE_SECONDS,
+});
+
+// Без аргументов - React.cache здесь дедуплицирует тривиально: в пределах
+// одного запроса любой повторный вызов listCities() - гарантированный
+// повтор одного и того же (единственного) ключа, а не просто вероятный.
+export const listCities = cache(cachedQueryCities);

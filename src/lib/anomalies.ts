@@ -1,5 +1,8 @@
-import { getPool } from './db.ts';
+import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 import { CODE_DESCRIPTIONS } from './anomaly-codes.ts';
+import { COMPANIES_CACHE_REVALIDATE_SECONDS, COMPANIES_CACHE_TAG } from './cache.ts';
+import { getPool } from './db.ts';
 
 // Русская подпись для disposition. report-anomalies.ts печатает значение как
 // есть в markdown-таблице ("row_merged" и т.п.) - в модалке это меньше
@@ -94,7 +97,7 @@ interface IssueRow {
  * раз за рендер страницы и используется и глобальной модалкой (byCode,
  * totalCount), и меткой в каждой строке таблицы (byExtId).
  */
-export async function getAnomalyJournal(): Promise<AnomalyJournal> {
+async function queryAnomalyJournal(): Promise<AnomalyJournal> {
   const pool = getPool();
   const result = await pool.query<IssueRow>(
     `SELECT code, disposition, ext_id, source_file, source_row, field, raw_value, new_value, detail
@@ -155,3 +158,17 @@ export async function getAnomalyJournal(): Promise<AnomalyJournal> {
 
   return { totalCount: result.rows.length, byCode, byExtId };
 }
+
+// Тот же межзапросный тег/окно, что у companies.ts (см. src/lib/cache.ts):
+// ingest_issues наполняет тот же npm run load:companies / load:review, что
+// и companies, поэтому оба кэша сбрасываются одним и тем же вызовом
+// POST /api/revalidate-companies, а не двумя независимыми. Без аргументов -
+// как и у listCities в companies.ts, React.cache здесь дедуплицирует
+// тривиально: в пределах одного запроса это гарантированный повтор одного
+// и того же (единственного) ключа.
+const cachedQueryAnomalyJournal = unstable_cache(queryAnomalyJournal, ['companies-anomalies'], {
+  tags: [COMPANIES_CACHE_TAG],
+  revalidate: COMPANIES_CACHE_REVALIDATE_SECONDS,
+});
+
+export const getAnomalyJournal = cache(cachedQueryAnomalyJournal);
