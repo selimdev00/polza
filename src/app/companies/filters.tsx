@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { PAGE_SIZE, type PageSizeOption } from '@/lib/company-params';
 import { CategorySelect } from './category-select';
+import { Checkbox } from './checkbox';
 import { CitySelect } from './city-select';
 import { PageSizeSelect } from './page-size-select';
 import { usePendingFilters } from './pending-context';
@@ -181,18 +182,12 @@ export function Filters({
         (нет площадки, откуда достать почту/соцсети), а сайт заполнен у
         меньшей доли компаний (890 из 1184), чем телефон (1053 из 1184) - то
         есть именно он реальнее фильтрует список, а не телефон, который и
-        так есть почти у всех. border-transparent + py-2 - та же формула
-        высоты, что у остальных контролов ряда (см. кнопку "Сбросить" ниже).
+        так есть почти у всех. Checkbox - тот же кастомный контрол, что
+        использовал бы любой будущий булевый фильтр (см. checkbox.tsx).
       */}
-      <label className="flex items-center gap-1.5 border border-transparent py-2 text-sm text-neutral-600 dark:text-neutral-400">
-        <input
-          type="checkbox"
-          checked={hasSite}
-          onChange={(event) => apply({ hasSite: event.target.checked })}
-          className="h-4 w-4 rounded border-neutral-300 text-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-neutral-600 dark:bg-neutral-900"
-        />
+      <Checkbox checked={hasSite} onChange={(checked) => apply({ hasSite: checked })}>
         Только с сайтом
-      </label>
+      </Checkbox>
 
       <PageSizeSelect pageSize={pageSize} />
 
