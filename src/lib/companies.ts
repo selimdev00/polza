@@ -47,7 +47,7 @@ function buildWhere(filters: CompanyFilters): { clause: string; params: unknown[
 
 export async function listCompanies(
   filters: CompanyFilters,
-): Promise<{ rows: Company[]; total: number }> {
+): Promise<{ rows: Company[]; total: number; page: number }> {
   const pool = getPool();
   const { clause, params } = buildWhere(filters);
 
@@ -57,7 +57,15 @@ export async function listCompanies(
   );
   const total = Number(totalResult.rows[0].count);
 
-  const offset = Math.max(0, (filters.page - 1) * PAGE_SIZE);
+  // Страницу зажимаем здесь, до вычисления offset, а не только при выводе.
+  // Номер приходит из чужой или устаревшей ссылки и может указывать далеко
+  // за пределы выдачи. Если зажать только подпись, запрос уйдёт с огромным
+  // offset, вернёт пусто, и над пустой таблицей окажется правдоподобный
+  // диапазон - это хуже явной ошибки, потому что выглядит правдой.
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(Math.max(1, filters.page), pageCount);
+  const offset = (page - 1) * PAGE_SIZE;
+
   const rowsResult = await pool.query<Company>(
     `SELECT id, ext_id, name, category, city, address, rating, reviews_count, site, phone
      FROM companies
@@ -67,7 +75,7 @@ export async function listCompanies(
     [...params, offset],
   );
 
-  return { rows: rowsResult.rows, total };
+  return { rows: rowsResult.rows, total, page };
 }
 
 export async function listCities(): Promise<string[]> {

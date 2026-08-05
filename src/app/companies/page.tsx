@@ -30,16 +30,14 @@ export default async function CompaniesPage({
   const city = (params.city ?? '').trim();
   const page = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
 
-  const [{ rows, total }, cities] = await Promise.all([
+  const [{ rows, total, page: safePage }, cities] = await Promise.all([
     listCompanies({ q, city, page }),
     listCities(),
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  // page может прийти из чужой или устаревшей ссылки и указывать за пределы
-  // результата (например ?page=999999 после того как фильтр сузил выдачу).
-  // Не зажать его здесь - значит показать диапазон, где начало больше конца.
-  const safePage = Math.min(page, pageCount);
+  // Эффективная страница приходит из listCompanies - там она зажата до того,
+  // как ушла в offset, так что данные и подпись всегда об одной странице.
   const from = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const to = Math.min(safePage * PAGE_SIZE, total);
 
