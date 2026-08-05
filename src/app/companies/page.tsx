@@ -52,7 +52,22 @@ export default async function CompaniesPage({
 
   return (
     <main className="mx-auto flex h-dvh max-w-[1600px] flex-col px-6 py-6">
-      <header className="z-10 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
+      {/*
+        Порядок слоёв на странице (снизу вверх). z-index работает только у
+        позиционированных элементов, поэтому у каждого уровня ниже задан явный
+        position, а не только класс z-*:
+          z-10 - прокручиваемая область таблицы, включая её липкий thead
+                 (thead живёт в собственном локальном контексте и с этой
+                 шкалой не конкурирует);
+          z-30 - шапка и футer пагинации: всегда поверх содержимого таблицы;
+          z-50 - всплывающие меню и модалки, открытые из шапки (список
+                 городов сегодня, модалка аномалий позже) - выше всего.
+        Раньше у шапки был z-10 при position: static, из-за чего z-index
+        браузером игнорировался и липкий thead таблицы перекрывал выпадающий
+        список городов. Если понадобится новый слой - продолжайте эту шкалу,
+        не вставляйте соседние числа между существующими.
+      */}
+      <header className="relative z-30 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
           <p className="mt-1 text-sm text-neutral-500">
@@ -65,7 +80,7 @@ export default async function CompaniesPage({
         <Filters cities={cities} q={q} city={city} />
       </header>
 
-      <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+      <div className="relative z-10 mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
         <table className="w-full min-w-[54rem] border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-neutral-50 text-left dark:bg-neutral-900">
             <tr>
@@ -132,7 +147,7 @@ export default async function CompaniesPage({
       </div>
 
       {pageCount > 1 && (
-        <nav className="z-10 mt-4 flex shrink-0 items-center justify-between border-t border-neutral-200 bg-white pt-4 text-sm dark:border-neutral-800 dark:bg-neutral-950">
+        <nav className="relative z-30 mt-4 flex shrink-0 items-center justify-between border-t border-neutral-200 bg-white pt-4 text-sm dark:border-neutral-800 dark:bg-neutral-950">
           <a
             href={pageHref(safePage - 1)}
             aria-disabled={safePage <= 1}

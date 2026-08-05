@@ -201,7 +201,7 @@ export function CitySelect({
           aria-label="Фильтр по городу"
           aria-activedescendant={activeId}
           onKeyDown={onListKeyDown}
-          className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white py-1 shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900"
+          className="absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white py-1 shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900"
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
