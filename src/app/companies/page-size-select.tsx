@@ -1,22 +1,28 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { ChangeEvent } from 'react';
 import { PAGE_SIZE, PAGE_SIZE_OPTIONS, type PageSizeOption } from '@/lib/company-params';
+import { SelectDropdown } from './select-dropdown';
 import { usePendingFilters } from './pending-context';
 
-// Всего три значения (см. PAGE_SIZE_OPTIONS в src/lib/companies.ts) - для
-// такого выбора хватает нативного <select>, без кастомного ARIA-listbox,
-// как у города/категории: там список открыт и может быть длинным, здесь
-// ровно три пункта и role="combobox" был бы избыточен.
+// Раньше это был нативный <select> - у него всего три варианта, и казалось,
+// что кастомный ARIA-listbox для них избыточен. На деле нативный <select>
+// открывает выпадающий список средствами ОС и не подчиняется теме
+// страницы - в тёмной теме получался светлый системный попап поверх тёмного
+// интерфейса, тот же баг, из-за которого когда-то появился city-select.tsx.
+// SelectDropdown уже решает это (свой попап, свои цвета, своя тема) и всё
+// равно работает с тремя вариантами без typeahead-коллизий - переиспользован
+// как есть, отдельная реализация ради "только трёх чисел" не оправдана.
 export function PageSizeSelect({ pageSize }: { pageSize: PageSizeOption }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { startTransition } = usePendingFilters();
 
-  function onChange(event: ChangeEvent<HTMLSelectElement>): void {
-    const next = Number(event.target.value) as PageSizeOption;
+  const options = PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) }));
+
+  function onChange(nextValue: string): void {
+    const next = Number(nextValue) as PageSizeOption;
     const params = new URLSearchParams(searchParams.toString());
     if (next === PAGE_SIZE) params.delete('limit');
     else params.set('limit', String(next));
@@ -30,20 +36,15 @@ export function PageSizeSelect({ pageSize }: { pageSize: PageSizeOption }) {
   }
 
   return (
-    <label className="flex items-center gap-1.5 text-sm text-neutral-500">
+    <span className="flex items-center gap-1.5 text-sm text-neutral-500">
       <span className="hidden sm:inline">На странице</span>
-      <select
-        value={pageSize}
+      <SelectDropdown
+        options={options}
+        value={String(pageSize)}
         onChange={onChange}
-        aria-label="Количество строк на странице"
-        className="rounded-md border border-neutral-300 bg-white py-2 pl-2 pr-6 text-sm text-neutral-900 outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-600"
-      >
-        {PAGE_SIZE_OPTIONS.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
+        ariaLabel="Количество строк на странице"
+        widthClassName="w-24"
+      />
+    </span>
   );
 }
