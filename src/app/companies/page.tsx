@@ -12,6 +12,7 @@ import {
 import { getAnomalyJournal, type CompanyIssue } from '@/lib/anomalies';
 import { AnomaliesModal } from './anomalies-modal';
 import { Filters } from './filters';
+import { Highlighted } from './highlighted';
 import { PageJump } from './page-jump';
 import { PendingProvider } from './pending-context';
 import { RowIssuesMarker } from './row-issues';
@@ -430,16 +431,26 @@ export default async function CompaniesPage({
                   >
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-1.5">
-                        {company.name}
+                        <Highlighted value={company.name} query={q} />
                         <RowIssuesMarker companyName={company.name} issues={issues} />
                       </span>
                     </td>
                     <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
-                      {company.category ?? '-'}
+                      {company.category ? (
+                        <Highlighted value={company.category} query={q} />
+                      ) : (
+                        '-'
+                      )}
                     </td>
-                    <td className="px-3 py-2">{company.city}</td>
+                    <td className="px-3 py-2">
+                      <Highlighted value={company.city} query={q} />
+                    </td>
                     <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
-                      {company.address ?? '-'}
+                      {company.address ? (
+                        <Highlighted value={company.address} query={q} />
+                      ) : (
+                        '-'
+                      )}
                     </td>
                     <td className="px-3 py-2 tabular-nums">
                       <RatingValue rating={company.rating} />
@@ -453,13 +464,15 @@ export default async function CompaniesPage({
                           target="_blank"
                           className="text-blue-600 underline underline-offset-2 transition-colors duration-150 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         >
-                          {siteUrl.replace(/^https?:\/\//, '')}
+                          <Highlighted value={siteUrl.replace(/^https?:\/\//, '')} query={q} />
                         </a>
                       ) : (
                         '-'
                       )}
                     </td>
-                    <td className="px-3 py-2 tabular-nums">{company.phone ?? '-'}</td>
+                    <td className="px-3 py-2 tabular-nums">
+                      {company.phone ? <Highlighted value={company.phone} query={q} /> : '-'}
+                    </td>
                   </tr>
                 );
               })
@@ -482,7 +495,7 @@ export default async function CompaniesPage({
                   <li key={company.id} className="px-3 py-3">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="inline-flex items-center gap-1.5 font-medium">
-                        {company.name}
+                        <Highlighted value={company.name} query={q} />
                         <RowIssuesMarker companyName={company.name} issues={issues} />
                       </span>
                       <span className="inline-flex shrink-0 items-center gap-1 text-xs tabular-nums text-neutral-500">
@@ -491,10 +504,17 @@ export default async function CompaniesPage({
                       </span>
                     </div>
                     <div className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
-                      {company.category ?? '-'} · {company.city}
+                      {company.category ? (
+                        <Highlighted value={company.category} query={q} />
+                      ) : (
+                        '-'
+                      )}{' '}
+                      · <Highlighted value={company.city} query={q} />
                     </div>
                     {secondaryLine && (
-                      <div className="mt-1 text-xs text-neutral-400">{secondaryLine}</div>
+                      <div className="mt-1 text-xs text-neutral-400">
+                        <Highlighted value={secondaryLine} query={q} />
+                      </div>
                     )}
                     {siteUrl && (
                       <a
@@ -503,7 +523,7 @@ export default async function CompaniesPage({
                         target="_blank"
                         className="mt-1 inline-block text-xs text-blue-600 underline underline-offset-2 transition-colors duration-150 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                       >
-                        {siteUrl.replace(/^https?:\/\//, '')}
+                        <Highlighted value={siteUrl.replace(/^https?:\/\//, '')} query={q} />
                       </a>
                     )}
                   </li>

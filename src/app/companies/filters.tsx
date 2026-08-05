@@ -152,8 +152,8 @@ export function Filters({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Поиск по названию"
-          aria-label="Поиск по названию"
+          placeholder="Поиск"
+          aria-label="Поиск по названию, категории, городу, адресу, сайту и телефону"
           className="w-full rounded-md border border-neutral-300 py-2 pl-9 pr-8 text-sm outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600"
         />
         {query && (
