@@ -69,17 +69,20 @@ function ChevronRightIcon() {
   );
 }
 
-// Стрелка вверх/вниз у заголовка активной колонки сортировки. Не рисуется
-// вовсе, если колонка не активна (см. SortableHeader) - двух одинаковых
-// нейтральных иконок на восьми колонках были бы просто визуальным шумом.
-function SortIcon({ direction }: { direction: SortDir }) {
+// Стрелка вверх/вниз у заголовка колонки сортировки. Рендерится всегда,
+// а не только у активной колонки - иначе появление иконки при клике сдвигало
+// бы текст заголовка вбок (ширина ссылки менялась бы между "нет иконки" и
+// "есть иконка"). У неактивных колонок она просто невидима (opacity-0), но
+// место под неё зарезервировано в любом из трёх состояний (по возрастанию,
+// по убыванию, не активна) одинаково.
+function SortIcon({ direction, active }: { direction: SortDir; active: boolean }) {
   return (
     <svg
       viewBox="0 0 20 20"
       fill="none"
       aria-hidden="true"
       focusable="false"
-      className="h-3.5 w-3.5 shrink-0"
+      className={`h-3.5 w-3.5 shrink-0 transition-opacity duration-150 ${active ? 'opacity-100' : 'opacity-0'}`}
     >
       <path
         d={direction === 'asc' ? 'M5.5 12.5L10 8l4.5 4.5' : 'M5.5 7.5L10 12l4.5-4.5'}
@@ -352,14 +355,20 @@ export default async function CompaniesPage({
                     aria-sort={isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
                     className={`px-3 py-2 font-medium ${col.align === 'right' ? 'text-right' : ''}`}
                   >
+                    {/*
+                      Иконка всегда после подписи, в том числе у правых
+                      колонок (Рейтинг, Отзывы) - зеркалить порядок под
+                      выравнивание не нужно, только сам текст/иконка вместе
+                      сдвигаются к правому краю ячейки через text-right на th.
+                    */}
                     <a
                       href={sortHref(col.key)}
                       className={`inline-flex items-center gap-1 transition-colors duration-150 hover:text-neutral-900 dark:hover:text-neutral-100 ${
-                        col.align === 'right' ? 'flex-row-reverse' : ''
-                      } ${isActive ? '' : 'text-neutral-600 dark:text-neutral-400'}`}
+                        isActive ? '' : 'text-neutral-600 dark:text-neutral-400'
+                      }`}
                     >
                       {col.label}
-                      {isActive && <SortIcon direction={dir} />}
+                      <SortIcon direction={dir} active={isActive} />
                     </a>
                   </th>
                 );
