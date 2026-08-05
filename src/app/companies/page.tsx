@@ -1,5 +1,7 @@
 import { PAGE_SIZE, listCities, listCompanies } from '@/lib/companies';
 import { Filters } from './filters';
+import { PendingProvider } from './pending-context';
+import { TableRegion } from './table-region';
 
 // Данные читаются прямо в серверном компоненте: строки подключения нет ни в
 // одном байте, уезжающем в браузер, и отдельный Route Handler для этого не
@@ -117,6 +119,7 @@ export default async function CompaniesPage({
         строке и получает свою собственную высоту - выравнивание тут просто
         не участвует, ломаться нечему.
       */}
+      <PendingProvider>
       <header className="relative z-30 flex shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
@@ -130,7 +133,7 @@ export default async function CompaniesPage({
         <Filters cities={cities} q={q} city={city} />
       </header>
 
-      <div className="relative z-10 mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+      <TableRegion>
         <table className="w-full min-w-[54rem] border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-neutral-50 text-left dark:bg-neutral-900">
             <tr>
@@ -157,7 +160,7 @@ export default async function CompaniesPage({
                 return (
                   <tr
                     key={company.id}
-                    className="border-t border-neutral-100 dark:border-neutral-900"
+                    className="border-t border-neutral-100 transition-colors duration-150 hover:bg-neutral-50 dark:border-neutral-900 dark:hover:bg-neutral-900/60"
                   >
                     <td className="px-3 py-2">{company.name}</td>
                     <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
@@ -179,7 +182,7 @@ export default async function CompaniesPage({
                           href={siteUrl}
                           rel="noopener noreferrer nofollow"
                           target="_blank"
-                          className="text-blue-600 underline underline-offset-2 dark:text-blue-400"
+                          className="text-blue-600 underline underline-offset-2 transition-colors duration-150 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           {siteUrl.replace(/^https?:\/\//, '')}
                         </a>
@@ -194,7 +197,7 @@ export default async function CompaniesPage({
             )}
           </tbody>
         </table>
-      </div>
+      </TableRegion>
 
       {pageCount > 1 && (
         // Сама полоса растянута на всю ширину страницы (относительно
@@ -220,7 +223,7 @@ export default async function CompaniesPage({
             ) : (
               <a
                 href={pageHref(safePage - 1)}
-                className="flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+                className="flex items-center gap-1 text-blue-600 transition-colors duration-150 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
               >
                 <ChevronLeftIcon />
                 Назад
@@ -240,7 +243,7 @@ export default async function CompaniesPage({
             ) : (
               <a
                 href={pageHref(safePage + 1)}
-                className="flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+                className="flex items-center gap-1 text-blue-600 transition-colors duration-150 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
               >
                 Вперёд
                 <ChevronRightIcon />
@@ -249,6 +252,7 @@ export default async function CompaniesPage({
           </nav>
         </div>
       )}
+      </PendingProvider>
     </main>
   );
 }

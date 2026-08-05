@@ -32,6 +32,11 @@ export function CitySelect({
 
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  // Список остаётся в DOM ещё немного после close(), чтобы доиграть
+  // анимацию исчезновения (см. animate-dropdown-out в globals.css и
+  // onAnimationEnd на <ul> ниже) - без этого закрытие было бы мгновенным.
+  const [closing, setClosing] = useState(false);
+  const wasOpenRef = useRef(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -68,6 +73,19 @@ export function CitySelect({
       listRef.current?.focus();
     }
   }, [open]);
+
+  // wasOpenRef различает "уже был открыт и закрылся" (нужна анимация выхода)
+  // от "изначально закрыт" (мигать нечем на самом первом рендере).
+  useEffect(() => {
+    if (open) {
+      setClosing(false);
+    } else if (wasOpenRef.current) {
+      setClosing(true);
+    }
+    wasOpenRef.current = open;
+  }, [open]);
+
+  const showList = open || closing;
 
   // Активная опция должна быть видна, даже если список выше своего
   // содержимого и появилась полоса прокрутки.
@@ -172,7 +190,7 @@ export function CitySelect({
         aria-label="Фильтр по городу"
         onClick={() => (open ? closeList() : openList())}
         onKeyDown={onTriggerKeyDown}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-neutral-300 px-3 py-2 text-left outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-neutral-300 px-3 py-2 text-left outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600"
       >
         <span className="truncate">{selectedLabel}</span>
         <svg
@@ -192,7 +210,7 @@ export function CitySelect({
         </svg>
       </button>
 
-      {open && (
+      {showList && (
         <ul
           ref={listRef}
           id={listId}
@@ -201,11 +219,25 @@ export function CitySelect({
           aria-label="Фильтр по городу"
           aria-activedescendant={activeId}
           onKeyDown={onListKeyDown}
-          className="absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white py-1 shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900"
+          onAnimationEnd={() => {
+            if (!open) setClosing(false);
+          }}
+          className={`absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white py-1 shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900 ${
+            open ? 'animate-dropdown-in' : 'pointer-events-none animate-dropdown-out'
+          }`}
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
+            // isActive - клавиатурная навигация (стрелки/Home/End/typeahead).
+            // Наведение мышью стилизуется отдельно, чистым CSS :hover ниже,
+            // и больше не двигает activeIndex - иначе клавиатурный
+            // пользователь терял бы место при случайном наведении курсора.
             const isActive = index === activeIndex;
+            const stateClassName = isActive
+              ? 'bg-neutral-200 ring-1 ring-inset ring-neutral-400 dark:bg-neutral-700 dark:ring-neutral-500'
+              : isSelected
+                ? 'bg-blue-50 dark:bg-blue-950/40'
+                : '';
             return (
               <li
                 key={option.value || '__all__'}
@@ -216,10 +248,7 @@ export function CitySelect({
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => selectOption(option)}
-                onMouseEnter={() => setActiveIndex(index)}
-                className={`flex cursor-pointer items-center gap-2 px-3 py-2 ${
-                  isActive ? 'bg-neutral-100 dark:bg-neutral-800' : ''
-                }`}
+                className={`flex cursor-pointer items-center gap-2 px-3 py-2 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-800/70 ${stateClassName}`}
               >
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                   {isSelected && (

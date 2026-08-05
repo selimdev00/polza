@@ -1,8 +1,9 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CitySelect } from './city-select';
+import { usePendingFilters } from './pending-context';
 
 function SearchIcon() {
   return (
@@ -50,7 +51,10 @@ export function Filters({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+  // isPending/startTransition идут из общего контекста, не из локального
+  // useTransition, чтобы TableRegion могла приглушать таблицу тем же самым
+  // переходом. Сам debounce/apply ниже не менялся.
+  const { isPending, startTransition } = usePendingFilters();
   const [query, setQuery] = useState(q);
   // Сравниваем с последним синхронизированным значением, а не считаем вызовы
   // эффекта: в dev App Router монтирует со Strict Mode, и React вызывает
@@ -113,14 +117,14 @@ export function Filters({
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Поиск по названию"
           aria-label="Поиск по названию"
-          className="w-64 rounded-md border border-neutral-300 py-2 pl-9 pr-8 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
+          className="w-64 rounded-md border border-neutral-300 py-2 pl-9 pr-8 text-sm outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600"
         />
         {query && (
           <button
             type="button"
             onClick={() => setQuery('')}
             aria-label="Очистить поиск"
-            className="absolute inset-y-0 right-2 flex items-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="absolute inset-y-0 right-2 flex items-center text-neutral-400 transition-colors duration-150 hover:text-neutral-700 dark:hover:text-neutral-200"
           >
             <ClearIcon />
           </button>
@@ -133,7 +137,7 @@ export function Filters({
         <button
           type="button"
           onClick={resetAll}
-          className="flex items-center gap-1 text-sm text-neutral-500 underline underline-offset-2 hover:text-neutral-800 dark:hover:text-neutral-200"
+          className="flex items-center gap-1 text-sm text-neutral-500 underline underline-offset-2 transition-colors duration-150 hover:text-neutral-800 dark:hover:text-neutral-200"
         >
           <ClearIcon />
           Сбросить
@@ -148,7 +152,7 @@ export function Filters({
         свежесмонтированном элементе экранные чтецы всё равно озвучивают.
       */}
       {isPending && (
-        <span aria-live="polite" className="text-sm text-neutral-400">
+        <span aria-live="polite" className="animate-fade-in text-sm text-neutral-400">
           обновляем
         </span>
       )}

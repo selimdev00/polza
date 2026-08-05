@@ -46,3 +46,71 @@
 *::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
+
+/*
+  Мелкая, быстрая моушен-анимация: раскрытие списка городов, появление
+  индикатора "обновляем" и подобные короткие переходы. Раскрытие города -
+  через animation (свойство CSS transition не умеет анимировать элемент,
+  который в тот же тик появляется в DOM с уже финальным состоянием), закрытие
+  - отдельная keyframe-анимация, которую city-select.tsx доигрывает до конца
+  перед тем, как реально убрать элемент из DOM (см. onAnimationEnd там).
+*/
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dropdown-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 150ms ease-out;
+}
+
+.animate-dropdown-out {
+  animation: dropdown-out 120ms ease-in;
+}
+
+.animate-fade-in {
+  animation: fade-in 150ms ease-out;
+}
+
+/*
+  Обязательное правило доступности: у кого в системе включено "уменьшить
+  анимацию", тот не должен видеть наши переходы вообще - ни раскрытие
+  списка, ни ховеры, ни фейд индикатора. Правило глобальное и одно на всё
+  приложение, а не разбросано по компонентам, чтобы точно ничего не забыть.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
