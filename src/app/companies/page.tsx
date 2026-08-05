@@ -51,21 +51,23 @@ export default async function CompaniesPage({
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          {total > 0
-            ? `Показаны ${from}-${to} из ${total}`
-            : 'Ничего не найдено'}
-        </p>
+    <main className="mx-auto flex h-dvh max-w-[1600px] flex-col px-6 py-6">
+      <header className="z-10 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            {total > 0
+              ? `Показаны ${from}-${to} из ${total}`
+              : 'Ничего не найдено'}
+          </p>
+        </div>
+
+        <Filters cities={cities} q={q} city={city} />
       </header>
 
-      <Filters cities={cities} q={q} city={city} />
-
-      <div className="mt-6 overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+      <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
         <table className="w-full min-w-[54rem] border-collapse text-sm">
-          <thead className="bg-neutral-50 text-left dark:bg-neutral-900">
+          <thead className="sticky top-0 z-10 bg-neutral-50 text-left dark:bg-neutral-900">
             <tr>
               <th className="px-3 py-2 font-medium">Название</th>
               <th className="px-3 py-2 font-medium">Категория</th>
@@ -130,7 +132,7 @@ export default async function CompaniesPage({
       </div>
 
       {pageCount > 1 && (
-        <nav className="mt-4 flex items-center justify-between text-sm">
+        <nav className="z-10 mt-4 flex shrink-0 items-center justify-between border-t border-neutral-200 bg-white pt-4 text-sm dark:border-neutral-800 dark:bg-neutral-950">
           <a
             href={pageHref(safePage - 1)}
             aria-disabled={safePage <= 1}

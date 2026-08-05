@@ -2,6 +2,41 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { CitySelect } from './city-select';
+
+function SearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      className="h-4 w-4 text-neutral-400"
+    >
+      <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M16 16l-3.2-3.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ClearIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      className="h-4 w-4"
+    >
+      <path
+        d="M5.5 5.5l9 9m0-9l-9 9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export function Filters({
   cities,
@@ -61,40 +96,46 @@ export function Filters({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
+  function resetAll(): void {
+    setQuery('');
+    apply({ q: '', city: '' });
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <input
-        type="search"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Поиск по названию"
-        aria-label="Поиск по названию"
-        className="w-64 rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
-      />
+      <div className="relative">
+        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+          <SearchIcon />
+        </span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Поиск по названию"
+          aria-label="Поиск по названию"
+          className="w-64 rounded-md border border-neutral-300 py-2 pl-9 pr-8 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Очистить поиск"
+            className="absolute inset-y-0 right-2 flex items-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          >
+            <ClearIcon />
+          </button>
+        )}
+      </div>
 
-      <select
-        value={city}
-        onChange={(event) => apply({ city: event.target.value })}
-        aria-label="Фильтр по городу"
-        className="rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
-      >
-        <option value="">Все города</option>
-        {cities.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+      <CitySelect cities={cities} value={city} onChange={(next) => apply({ city: next })} />
 
       {(query || city) && (
         <button
           type="button"
-          onClick={() => {
-            setQuery('');
-            apply({ q: '', city: '' });
-          }}
-          className="text-sm text-neutral-500 underline underline-offset-2 hover:text-neutral-800 dark:hover:text-neutral-200"
+          onClick={resetAll}
+          className="flex items-center gap-1 text-sm text-neutral-500 underline underline-offset-2 hover:text-neutral-800 dark:hover:text-neutral-200"
         >
+          <ClearIcon />
           Сбросить
         </button>
       )}
