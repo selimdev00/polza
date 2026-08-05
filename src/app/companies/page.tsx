@@ -150,8 +150,48 @@ export default async function CompaniesPage({
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-neutral-500">
-                  По заданным условиям компаний нет
+                <td colSpan={8} className="px-3 py-16 text-center">
+                  {cities.length === 0 ? (
+                    // cities не зависит от фильтров q/city, поэтому пустой
+                    // список городов однозначно значит: в companies вообще
+                    // нет строк, а не что фильтр просто ничего не нашёл.
+                    // Отдельный запрос "сколько всего в таблице" ради этого
+                    // не нужен - тот же сигнал уже есть в уже загруженных
+                    // данных.
+                    <>
+                      <p className="text-base font-medium text-neutral-700 dark:text-neutral-300">
+                        Данных ещё нет
+                      </p>
+                      <p className="mt-2 text-sm text-neutral-500">
+                        Похоже, загрузчики ещё не запускались. Выполните{' '}
+                        <code className="rounded bg-neutral-100 px-1 py-0.5 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                          npm run load:companies
+                        </code>{' '}
+                        и обновите страницу.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-base font-medium text-neutral-700 dark:text-neutral-300">
+                        Ничего не найдено
+                      </p>
+                      <p className="mt-2 text-sm text-neutral-500">
+                        {q && city
+                          ? `По запросу «${q}» в городе «${city}» компаний нет.`
+                          : q
+                            ? `По запросу «${q}» компаний нет.`
+                            : city
+                              ? `В городе «${city}» компаний нет.`
+                              : 'По заданным условиям компаний нет.'}
+                      </p>
+                      <a
+                        href="/companies"
+                        className="mt-4 inline-block text-sm text-blue-600 underline underline-offset-2 transition-colors duration-150 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        Сбросить фильтры
+                      </a>
+                    </>
+                  )}
                 </td>
               </tr>
             ) : (
