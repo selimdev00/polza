@@ -152,7 +152,12 @@ export async function ingest(
       }
 
       // 6. Город: обязателен, поэтому строка без распознанного города выбывает.
-      const rawCity = (row.city ?? '').trim();
+      // Значение передаётся БЕЗ предварительного trim. canonicalCity сам
+      // обрезает пробелы и сообщает об этом флагом repaired, а если обрезать
+      // заранее, то он увидит уже чистую строку, вернёт repaired: false, и
+      // 'Москва ' с висящим пробелом починится молча, не попав в журнал.
+      // Ровно такую подставу и заложили в review.csv.
+      const rawCity = row.city ?? '';
       const city = canonicalCity(rawCity);
       if (!city.value) {
         await logIssue(client, stagingId, record, {
