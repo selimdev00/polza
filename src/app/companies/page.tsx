@@ -5,9 +5,7 @@ import {
   listCategories,
   listCities,
   listCompanies,
-  resolvePageSize,
-  resolveSortDir,
-  resolveSortKey,
+  parseCompanyPageParams,
   type SortDir,
   type SortKey,
 } from '@/lib/companies';
@@ -145,30 +143,22 @@ function safeSiteUrl(site: string | null): string | null {
 export default async function CompaniesPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    q?: string;
-    city?: string;
-    category?: string;
-    hasSite?: string;
-    sort?: string;
-    dir?: string;
-    limit?: string;
-    page?: string;
-  }>;
+  // Next отдаёт этот тип буквально так - { [key]: string | string[] | undefined } -
+  // а не Promise<{ q?: string; ... }>: повторный параметр (?city=a&city=b)
+  // приходит массивом. Прежняя, "удобная" сигнатура лгала о рантайме - на
+  // повторном параметре (params.q ?? '').trim() падало (массив не строка) и
+  // пользователь видел error.tsx с диагнозом "база недоступна", не имеющим
+  // отношения к причине. parseCompanyPageParams ниже - единственное место,
+  // где это сырое значение превращается в типизированные поля страницы.
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
-  const q = (params.q ?? '').trim();
-  const city = (params.city ?? '').trim();
-  const category = (params.category ?? '').trim();
-  const hasSite = params.hasSite === '1';
-  // resolveSortKey/resolveSortDir/resolvePageSize - единственное место, где
-  // значения из URL превращаются в то, что реально уйдёт в SQL (см. подробный
-  // разбор в src/lib/companies.ts). Ничего, что пришло сырым текстом из
-  // params, ниже этой строки уже не используется.
-  const sort = resolveSortKey(params.sort);
-  const dir = resolveSortDir(params.dir);
-  const pageSize = resolvePageSize(params.limit);
-  const page = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
+  const rawParams = await searchParams;
+  // parseCompanyPageParams (src/lib/company-params.ts) - единственное место,
+  // где значения из URL превращаются в то, что реально уйдёт в SQL (см.
+  // подробный разбор в src/lib/companies.ts). Ничего сырого из rawParams
+  // ниже этой строки уже не используется.
+  const { q, city, category, hasSite, sort, dir, pageSize, page } =
+    parseCompanyPageParams(rawParams);
   const isDefaultSort = sort === DEFAULT_SORT_KEY && dir === DEFAULT_SORT_DIR;
 
   const [{ rows, total, page: safePage }, cities, categories, journal] = await Promise.all([

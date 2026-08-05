@@ -74,6 +74,44 @@ export function resolveSortDir(raw: string | undefined): SortDir {
   return raw === 'desc' ? 'desc' : 'asc';
 }
 
+// Next отдаёт повторяющийся параметр (?city=a&city=b) массивом, а не строкой.
+// Без этой нормализации .trim() падает, и пользователь видит сообщение про
+// недоступную базу - диагноз, не имеющий отношения к причине.
+export const first = (value: string | string[] | undefined): string =>
+  (Array.isArray(value) ? value[0] : value) ?? '';
+
+export interface CompanyPageParams {
+  q: string;
+  city: string;
+  category: string;
+  hasSite: boolean;
+  sort: SortKey;
+  dir: SortDir;
+  pageSize: PageSizeOption;
+  page: number;
+}
+
+// Единственное место, где сырой searchParams превращается в типизированные
+// значения страницы - вызывается один раз, наверху CompaniesPage, до любого
+// использования параметров. first(...) применён равномерно ко всем полям,
+// включая те шесть (hasSite/sort/dir/limit/page), что сегодня не падают на
+// массиве только потому, что коэрсятся в булево/число/белый список - если
+// завтра здесь появится ещё один параметр со строковым методом, у него уже
+// не будет шанса повторить эту же ошибку.
+export function parseCompanyPageParams(
+  raw: Record<string, string | string[] | undefined>,
+): CompanyPageParams {
+  const q = first(raw.q).trim();
+  const city = first(raw.city).trim();
+  const category = first(raw.category).trim();
+  const hasSite = first(raw.hasSite) === '1';
+  const sort = resolveSortKey(first(raw.sort) || undefined);
+  const dir = resolveSortDir(first(raw.dir) || undefined);
+  const pageSize = resolvePageSize(first(raw.limit) || undefined);
+  const page = Math.max(1, Number.parseInt(first(raw.page) || '1', 10) || 1);
+  return { q, city, category, hasSite, sort, dir, pageSize, page };
+}
+
 // rating и category допускают NULL (79-100 компаний без рейтинга смотря по
 // последней перезагрузке данных, 1 - без категории из-за сдвига колонок в
 // review.csv, см. схему). Решение: NULLS LAST всегда, независимо от
