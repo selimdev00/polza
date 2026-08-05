@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ChangeEvent } from 'react';
-import { PAGE_SIZE, PAGE_SIZE_OPTIONS, type PageSizeOption } from '@/lib/companies';
+import { PAGE_SIZE, PAGE_SIZE_OPTIONS, type PageSizeOption } from '@/lib/company-params';
 import { usePendingFilters } from './pending-context';
 
 // Всего три значения (см. PAGE_SIZE_OPTIONS в src/lib/companies.ts) - для

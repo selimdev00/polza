@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { PAGE_SIZE, type PageSizeOption } from '@/lib/companies';
+import { PAGE_SIZE, type PageSizeOption } from '@/lib/company-params';
 import { CategorySelect } from './category-select';
 import { CitySelect } from './city-select';
 import { PageSizeSelect } from './page-size-select';
