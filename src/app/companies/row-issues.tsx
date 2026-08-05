@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import type { CompanyIssue } from '@/lib/anomalies';
+import { useClosingTransition } from './use-closing-transition';
 
 // Значение и до, и после - результат чужой выгрузки, поэтому может быть
 // пустой строкой, а не только null. null - поля не было вовсе (например, у
@@ -34,6 +35,10 @@ export function RowIssuesMarker({
   issues: CompanyIssue[];
 }) {
   const [open, setOpen] = useState(false);
+  // mounted - открыт попап или ещё доигрывает animate-fade-out после
+  // закрытия, тот же паттерн, что у выпадающих списков и модалки аномалий
+  // (см. use-closing-transition.ts).
+  const { mounted, closing, onAnimationEnd } = useClosingTransition(open);
   // Координаты попапа считаются от вьюпорта (position: fixed), а не от
   // ближайшего позиционированного предка (position: absolute). Строка
   // таблицы живёт внутри прокручиваемой области (overflow-auto в
@@ -120,18 +125,23 @@ export function RowIssuesMarker({
         <MarkerIcon />
       </button>
 
-      {open && position && (
+      {mounted && position && (
         <div
           ref={popupRef}
           role="dialog"
           aria-labelledby={headingId}
           tabIndex={-1}
           onKeyDown={onKeyDown}
+          onAnimationEnd={onAnimationEnd}
           style={{ top: position.top, left: position.left }}
           // z-50 - тот же слой, что у модалки «Аномалии» и списка городов:
           // всплывающее содержимое стоит выше шапки и футера (z-30) и
           // содержимого таблицы (z-10) по шкале из page.tsx.
-          className="fixed z-50 w-80 max-w-[calc(100vw-2rem)] animate-fade-in rounded-md border border-neutral-200 bg-white p-3 text-sm shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900"
+          // pointer-events-none, пока closing - угасающий попап уже не
+          // должен быть кликабелен (см. тот же приём в anomalies-modal.tsx).
+          className={`fixed z-50 w-80 max-w-[calc(100vw-2rem)] rounded-md border border-neutral-200 bg-white p-3 text-sm shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900 ${
+            closing ? 'pointer-events-none animate-fade-out' : 'animate-fade-in'
+          }`}
         >
           <h3 id={headingId} className="text-xs font-semibold text-neutral-500">
             Журнал по компании «{companyName}»

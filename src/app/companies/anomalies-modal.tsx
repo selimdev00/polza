@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import type { AnomalyCodeGroup } from '@/lib/anomalies';
+import { useClosingTransition } from './use-closing-transition';
 
 // Селектор фокусируемых элементов внутри модалки - для ручного focus trap.
 // [tabindex]:not([tabindex="-1"]) исключает сам контейнер диалога (у него
@@ -51,6 +52,12 @@ export function AnomaliesModal({
   byCode: AnomalyCodeGroup[];
 }) {
   const [open, setOpen] = useState(false);
+  // mounted - открыта модалка или ещё доигрывает animate-fade-out после
+  // закрытия (см. use-closing-transition.ts, тот же паттерн, что у
+  // выпадающих списков в select-dropdown.tsx). close() ниже переключает
+  // только open - фокус на триггер и разблокировку скролла страницы это не
+  // задерживает, они по-прежнему в cleanup эффекта ниже, синхронно.
+  const { mounted, closing, onAnimationEnd } = useClosingTransition(open);
   const baseId = useId();
   const headingId = `${baseId}-heading`;
 
@@ -130,12 +137,18 @@ export function AnomaliesModal({
         </span>
       </button>
 
-      {open && (
+      {mounted && (
         // z-50 - тот же слой, что у выпадающего списка городов: "всплывающие
         // меню и модалки" в шкале z-index из page.tsx. Модалка обязана
         // перекрывать и шапку, и полосу пагинации (обе на z-30).
+        // pointer-events-none, пока closing - затемнение и сама модалка ещё
+        // видны (доигрывают animate-fade-out), но кликнуть по угасающему
+        // содержимому уже нельзя, оно не должно оставаться интерактивным.
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-[8vh] animate-fade-in sm:p-6"
+          onAnimationEnd={onAnimationEnd}
+          className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-[8vh] sm:p-6 ${
+            closing ? 'pointer-events-none animate-fade-out' : 'animate-fade-in'
+          }`}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) close();
           }}
