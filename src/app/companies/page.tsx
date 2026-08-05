@@ -2,6 +2,7 @@ import { PAGE_SIZE, listCities, listCompanies } from '@/lib/companies';
 import { getAnomalyJournal, type CompanyIssue } from '@/lib/anomalies';
 import { AnomaliesModal } from './anomalies-modal';
 import { Filters } from './filters';
+import { PageJump } from './page-jump';
 import { PendingProvider } from './pending-context';
 import { RowIssuesMarker } from './row-issues';
 import { TableRegion } from './table-region';
@@ -386,9 +387,7 @@ export default async function CompaniesPage({
                 Назад
               </a>
             )}
-            <span className="text-neutral-500">
-              Страница {safePage} из {pageCount}
-            </span>
+            <PageJump currentPage={safePage} pageCount={pageCount} />
             {safePage >= pageCount ? (
               <span
                 aria-disabled="true"
