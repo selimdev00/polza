@@ -53,6 +53,11 @@ describe('canonicalCity', () => {
     expect(canonicalCity('ул. Советская, д. 89, офис 43').value).toBeNull();
     expect(canonicalCity('').value).toBeNull();
   });
+
+  it('не превращает короткий мусор в город', () => {
+    expect(canonicalCity('УАЗ').value).toBeNull();
+    expect(canonicalCity('США').value).toBeNull();
+  });
 });
 
 describe('parseRating', () => {
@@ -76,6 +81,11 @@ describe('parseRating', () => {
   it('пустое значение - это отсутствие рейтинга, а не ошибка', () => {
     expect(parseRating('')).toEqual({ value: null, code: null });
     expect(parseRating(null)).toEqual({ value: null, code: null });
+  });
+
+  it('границы диапазона включительно', () => {
+    expect(parseRating('0')).toEqual({ value: 0, code: null });
+    expect(parseRating('5')).toEqual({ value: 5, code: null });
   });
 });
 

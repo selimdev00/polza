@@ -1,6 +1,7 @@
 // Города, реально встречающиеся в выгрузке page_*.json. Используются как
 // словарь для канонизации: всё, что не совпало точно, сопоставляется по
-// расстоянию Левенштейна с порогом 2.
+// расстоянию Левенштейна с порогом, зависящим от длины названия (см.
+// canonicalCity).
 export const KNOWN_CITIES = [
   'Волгоград', 'Воронеж', 'Екатеринбург', 'Казань', 'Калуга',
   'Краснодар', 'Москва', 'Нижний Новгород', 'Новосибирск', 'Омск',
@@ -99,7 +100,15 @@ export function canonicalCity(value: string): { value: string | null; repaired: 
     const distance = levenshtein(city.toLowerCase(), lower);
     if (!best || distance < best.distance) best = { city, distance };
   }
-  if (best && best.distance <= 2) return { value: best.city, repaired: true };
+  // Порог зависит от длины названия, а не фиксирован. С плоским порогом 2
+  // короткие названия перетягивают на себя всё подряд: до «Уфа» ровно две
+  // правки от «УАЗ» и от «США», и мусорное значение молча стало бы городом.
+  // Для «Санкт-Петербург» (15 символов) порог остаётся 2, и опечатка
+  // «Санкат-Петербург» с расстоянием 1 по-прежнему чинится.
+  if (best) {
+    const threshold = Math.min(2, Math.floor(best.city.length / 3));
+    if (best.distance <= threshold) return { value: best.city, repaired: true };
+  }
 
   return { value: null, repaired: false };
 }
