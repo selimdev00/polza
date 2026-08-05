@@ -8,3 +8,5 @@ next-env.d.ts
 .planning
 .superpowers
 .DS_Store
+AGENTS.md
+CLAUDE.md
