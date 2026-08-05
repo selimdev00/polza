@@ -41,15 +41,27 @@ export default function CompaniesLoading() {
       </header>
 
       <div className="relative z-10 mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-        <table className="w-full min-w-[54rem] border-collapse text-sm">
+        {/*
+          hidden/sm:table ниже повторяет разбивку из page.tsx: таблица видна
+          только от sm (640px) и выше, а до sm её заменяет карточный список.
+          Раньше здесь не было hidden вовсе - скелетон ниже sm показывал
+          восьмиколоночную десктопную таблицу, а после загрузки страница
+          подменяла её карточным списком - ровно тот скачок раскладки,
+          который этот файл существует, чтобы предотвратить.
+        */}
+        <table className="hidden w-full min-w-[54rem] border-collapse text-sm sm:table">
           <thead className="sticky top-0 z-10 bg-neutral-50 text-left dark:bg-neutral-900">
             <tr>
               <th className="px-3 py-2 font-medium">Название</th>
               <th className="px-3 py-2 font-medium">Категория</th>
               <th className="px-3 py-2 font-medium">Город</th>
               <th className="px-3 py-2 font-medium">Адрес</th>
-              <th className="px-3 py-2 text-right font-medium">Рейтинг</th>
-              <th className="px-3 py-2 text-right font-medium">Отзывы</th>
+              {/* Рейтинг/Отзывы выровнены по левому краю, как и в page.tsx
+                  начиная с e825284 - text-right/ml-auto здесь были
+                  унаследованы от более раннего состояния настоящей таблицы
+                  и с тех пор разошлись с ней. */}
+              <th className="px-3 py-2 font-medium">Рейтинг</th>
+              <th className="px-3 py-2 font-medium">Отзывы</th>
               <th className="px-3 py-2 font-medium">Сайт</th>
               <th className="px-3 py-2 font-medium">Телефон</th>
             </tr>
@@ -69,11 +81,11 @@ export default function CompaniesLoading() {
                 <td className="px-3 py-2">
                   <SkeletonBlock className="h-4 w-40" />
                 </td>
-                <td className="px-3 py-2 text-right">
-                  <SkeletonBlock className="ml-auto h-4 w-8" />
+                <td className="px-3 py-2">
+                  <SkeletonBlock className="h-4 w-8" />
                 </td>
-                <td className="px-3 py-2 text-right">
-                  <SkeletonBlock className="ml-auto h-4 w-8" />
+                <td className="px-3 py-2">
+                  <SkeletonBlock className="h-4 w-8" />
                 </td>
                 <td className="px-3 py-2">
                   <SkeletonBlock className="h-4 w-32" />
@@ -85,6 +97,27 @@ export default function CompaniesLoading() {
             ))}
           </tbody>
         </table>
+
+        {/*
+          Карточный скелетон ниже sm - зеркалит структуру карточки в
+          page.tsx (имя+рейтинг в одной строке, категория/город строкой
+          ниже, необязательная строка адреса/телефона), не восемь колонок
+          таблицы выше.
+        */}
+        <div className="sm:hidden">
+          <ul className="divide-y divide-neutral-100 dark:divide-neutral-900">
+            {Array.from({ length: PAGE_SIZE }, (_, index) => (
+              <li key={index} className="px-3 py-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <SkeletonBlock className="h-4 w-36" />
+                  <SkeletonBlock className="h-3 w-14" />
+                </div>
+                <SkeletonBlock className="mt-1.5 h-3.5 w-40" />
+                <SkeletonBlock className="mt-1.5 h-3 w-32" />
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       {/*
