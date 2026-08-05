@@ -119,6 +119,11 @@ export async function ingest(
           newValue: `category=NULL; city=${row.city}; address=${row.address}`,
           detail: 'В category лежал город, в city - адрес, address пуст. Значение категории потеряно на выгрузке.',
         });
+        // Одна строка ingest_issues, два счётчика: это намеренно, а не
+        // баг подсчёта. city и address починены сдвигом, а значение
+        // category потеряно безвозвратно - оба факта верны одновременно,
+        // поэтому stats.repaired и stats.nulled не обязаны суммироваться
+        // до количества строк журнала.
         stats.repaired += 1;
         stats.nulled += 1;
       }
@@ -177,13 +182,22 @@ export async function ingest(
         if (rating.value === null) stats.nulled += 1; else stats.repaired += 1;
       }
 
+      // Из трёх кодов parseReviewsCount починкой является только один.
+      // reviews_fractional (45.5 -> 45) сохраняет смысл исходного значения.
+      // reviews_negative (-10) и reviews_unparseable («много») сохранить
+      // нечего: значению нельзя верить, и 0 здесь играет ту же роль, что
+      // NULL для рейтинга - «неизвестно». Называть это починкой в журнале
+      // значит отчитаться о том, чего не делали.
       const reviews = parseReviewsCount(row.reviews_count);
       if (reviews.code) {
+        const isRepair = reviews.code === 'reviews_fractional';
         await logIssue(client, stagingId, record, {
-          disposition: 'field_repaired', code: reviews.code, field: 'reviews_count',
+          disposition: isRepair ? 'field_repaired' : 'field_nulled',
+          code: reviews.code, field: 'reviews_count',
           rawValue: row.reviews_count, newValue: String(reviews.value),
         });
-        stats.repaired += 1;
+        if (isRepair) stats.repaired += 1;
+        else stats.nulled += 1;
       }
 
       const site = normalizeSite(row.site);
@@ -256,7 +270,13 @@ export async function ingest(
     await client.query('COMMIT');
     return stats;
   } catch (error) {
-    await client.query('ROLLBACK');
+    // Если сам ROLLBACK упадёт, исходная ошибка потеряется, а она и есть
+    // причина. Поэтому падение отката глушим и пробрасываем оригинал.
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // намеренно проглатываем
+    }
     throw error;
   } finally {
     client.release();
