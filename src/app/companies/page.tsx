@@ -5,6 +5,7 @@ import { Filters } from './filters';
 import { PendingProvider } from './pending-context';
 import { RowIssuesMarker } from './row-issues';
 import { TableRegion } from './table-region';
+import { ThemeToggle } from './theme-toggle';
 
 // Данные читаются прямо в серверном компоненте: строки подключения нет ни в
 // одном байте, уезжающем в браузер, и отдельный Route Handler для этого не
@@ -193,6 +194,7 @@ export default async function CompaniesPage({
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
             <AnomaliesModal totalCount={journal.totalCount} byCode={journal.byCode} />
+            <ThemeToggle />
           </div>
           <p className="mt-1 text-sm text-neutral-500">
             {total > 0
