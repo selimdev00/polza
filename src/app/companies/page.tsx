@@ -328,20 +328,24 @@ export default async function CompaniesPage({
             <tr>
               {(
                 [
-                  { key: 'name' as const, label: 'Название', align: 'left' as const },
-                  { key: 'category' as const, label: 'Категория', align: 'left' as const },
-                  { key: 'city' as const, label: 'Город', align: 'left' as const },
-                  { key: null, label: 'Адрес', align: 'left' as const },
-                  { key: 'rating' as const, label: 'Рейтинг', align: 'right' as const },
-                  { key: 'reviews_count' as const, label: 'Отзывы', align: 'right' as const },
-                  { key: null, label: 'Сайт', align: 'left' as const },
-                  { key: null, label: 'Телефон', align: 'left' as const },
+                  { key: 'name' as const, label: 'Название' },
+                  { key: 'category' as const, label: 'Категория' },
+                  { key: 'city' as const, label: 'Город' },
+                  { key: null, label: 'Адрес' },
+                  // Рейтинг и Отзывы раньше были прижаты к правому краю (как
+                  // числовые колонки часто оформляют) - по просьбе выровнены
+                  // по левому краю вместе со всеми остальными. tabular-nums
+                  // в ячейках ниже (не здесь, в теле таблицы) по-прежнему
+                  // держит цифры в одну колонку разрядов, так что при левом
+                  // выравнивании они не выглядят рваными.
+                  { key: 'rating' as const, label: 'Рейтинг' },
+                  { key: 'reviews_count' as const, label: 'Отзывы' },
+                  { key: null, label: 'Сайт' },
+                  { key: null, label: 'Телефон' },
                 ] as const
               ).map((col) => {
                 if (col.key === null) {
-                  // Адрес/Сайт/Телефон не сортируются и все три выровнены по
-                  // левому краю - align здесь всегда 'left', отдельная
-                  // проверка не нужна (и TS это подтверждает сужением типа).
+                  // Адрес/Сайт/Телефон не сортируются.
                   return (
                     <th key={col.label} className="px-3 py-2 font-medium">
                       {col.label}
@@ -353,14 +357,8 @@ export default async function CompaniesPage({
                   <th
                     key={col.label}
                     aria-sort={isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                    className={`px-3 py-2 font-medium ${col.align === 'right' ? 'text-right' : ''}`}
+                    className="px-3 py-2 font-medium"
                   >
-                    {/*
-                      Иконка всегда после подписи, в том числе у правых
-                      колонок (Рейтинг, Отзывы) - зеркалить порядок под
-                      выравнивание не нужно, только сам текст/иконка вместе
-                      сдвигаются к правому краю ячейки через text-right на th.
-                    */}
                     <a
                       href={sortHref(col.key)}
                       className={`inline-flex items-center gap-1 transition-colors duration-150 hover:text-neutral-900 dark:hover:text-neutral-100 ${
@@ -404,12 +402,8 @@ export default async function CompaniesPage({
                     <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
                       {company.address ?? '-'}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {formatRating(company.rating)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {company.reviews_count}
-                    </td>
+                    <td className="px-3 py-2 tabular-nums">{formatRating(company.rating)}</td>
+                    <td className="px-3 py-2 tabular-nums">{company.reviews_count}</td>
                     <td className="px-3 py-2">
                       {siteUrl ? (
                         <a
