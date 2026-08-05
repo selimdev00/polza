@@ -45,6 +45,7 @@ async function main(): Promise<void> {
     return { row, sourceFile: 'review.csv', sourceRow: index + 2, raw };
   });
 
+  const runStartedAt = new Date();
   const stats = await ingest(records, 'review_csv');
 
   console.log('');
@@ -58,9 +59,16 @@ async function main(): Promise<void> {
   console.log(`  обнулено полей:        ${stats.nulled}`);
 
   const pool = getPool();
+  // Выборка ограничена текущим запуском по created_at. Без этого повторный
+  // запуск загрузчика по неочищенной базе показал бы вперемешку старые и
+  // новые записи журнала, и отчёт врал бы, ничем это не выдав.
   const shadow = await pool.query<{ ext_id: string; new_value: string; detail: string }>(
     `SELECT ext_id, new_value, detail FROM ingest_issues
-     WHERE code = 'shadow_duplicate' ORDER BY ext_id`,
+     WHERE code = 'shadow_duplicate'
+       AND source_file = 'review.csv'
+       AND created_at >= $1
+     ORDER BY ext_id`,
+    [runStartedAt],
   );
   if (shadow.rowCount) {
     console.log('');
