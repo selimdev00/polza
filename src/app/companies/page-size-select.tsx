@@ -36,8 +36,14 @@ export function PageSizeSelect({ pageSize }: { pageSize: PageSizeOption }) {
   }
 
   return (
-    <span className="flex items-center gap-1.5 text-sm text-neutral-500">
-      <span className="hidden sm:inline">На странице</span>
+    <span className="flex items-center gap-1.5 text-sm">
+      {/*
+        text-neutral-500 - только на подписи, не на общем контейнере. Раньше
+        он был на flex-обёртке и каскадом тонировал сам SelectDropdown -
+        починено в SelectDropdown (свой явный цвет текста), но и источник
+        тоже не должен красить чужого ребёнка через наследование.
+      */}
+      <span className="hidden text-neutral-500 sm:inline">На странице</span>
       <SelectDropdown
         options={options}
         value={String(pageSize)}

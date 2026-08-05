@@ -192,7 +192,13 @@ export function SelectDropdown({
         aria-label={ariaLabel}
         onClick={() => (open ? closeList() : openList())}
         onKeyDown={onTriggerKeyDown}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-neutral-300 px-3 py-2 text-left outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600"
+        // text-neutral-900/text-neutral-100 заданы явно, а не унаследованы -
+        // компонент используется в разных обёртках (например,
+        // page-size-select.tsx кладёт его рядом с приглушённой подписью
+        // "На странице"), и без явного цвета он тонировался бы в цвет
+        // ближайшего предка вместо собственного полного контраста. Общий
+        // компонент не должен менять вид от того, куда его положили.
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-neutral-300 px-3 py-2 text-left text-neutral-900 outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-600"
       >
         <span className="truncate">{selectedLabel}</span>
         <svg
@@ -222,7 +228,10 @@ export function SelectDropdown({
           aria-activedescendant={activeId}
           onKeyDown={onListKeyDown}
           onAnimationEnd={onAnimationEnd}
-          className={`absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white py-1 shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900 ${
+          // Тот же явный цвет текста, что и у триггера выше, и по той же
+          // причине - список не должен тонироваться цветом обёртки, в
+          // которую его положили.
+          className={`absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-neutral-300 bg-white py-1 text-neutral-900 shadow-lg outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 ${
             open ? 'animate-dropdown-in' : 'pointer-events-none animate-dropdown-out'
           }`}
         >
