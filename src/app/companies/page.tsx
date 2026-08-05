@@ -1,6 +1,9 @@
 import { PAGE_SIZE, listCities, listCompanies } from '@/lib/companies';
+import { getAnomalyJournal, type CompanyIssue } from '@/lib/anomalies';
+import { AnomaliesModal } from './anomalies-modal';
 import { Filters } from './filters';
 import { PendingProvider } from './pending-context';
+import { RowIssuesMarker } from './row-issues';
 import { TableRegion } from './table-region';
 
 // Данные читаются прямо в серверном компоненте: строки подключения нет ни в
@@ -72,10 +75,20 @@ export default async function CompaniesPage({
   const city = (params.city ?? '').trim();
   const page = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
 
-  const [{ rows, total, page: safePage }, cities] = await Promise.all([
+  const [{ rows, total, page: safePage }, cities, journal] = await Promise.all([
     listCompanies({ q, city, page }),
     listCities(),
+    getAnomalyJournal(),
   ]);
+
+  const noIssues: CompanyIssue[] = [];
+  // ingest_issues читается целиком одним запросом (см. getAnomalyJournal) и
+  // раскладывается в карту по ext_id - поэтому метка в строке не стоит
+  // компании отдельного запроса: и на 25 строк текущей страницы, и на все
+  // 1184 компании сразу это по-прежнему один и тот же единственный запрос.
+  function issuesFor(extId: string): CompanyIssue[] {
+    return journal.byExtId[extId] ?? noIssues;
+  }
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   // Эффективная страница приходит из listCompanies - там она зажата до того,
@@ -177,7 +190,10 @@ export default async function CompaniesPage({
       <PendingProvider>
       <header className="relative z-30 flex shrink-0 flex-wrap justify-between gap-4 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-800 dark:bg-neutral-950">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">Компании</h1>
+            <AnomaliesModal totalCount={journal.totalCount} byCode={journal.byCode} />
+          </div>
           <p className="mt-1 text-sm text-neutral-500">
             {total > 0
               ? `Показаны ${from}-${to} из ${total}`
@@ -222,12 +238,18 @@ export default async function CompaniesPage({
             ) : (
               rows.map((company) => {
                 const siteUrl = safeSiteUrl(company.site);
+                const issues = issuesFor(company.ext_id);
                 return (
                   <tr
                     key={company.id}
                     className="border-t border-neutral-100 transition-colors duration-150 hover:bg-neutral-50 dark:border-neutral-900 dark:hover:bg-neutral-900/60"
                   >
-                    <td className="px-3 py-2">{company.name}</td>
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        {company.name}
+                        <RowIssuesMarker companyName={company.name} issues={issues} />
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
                       {company.category ?? '-'}
                     </td>
@@ -270,13 +292,17 @@ export default async function CompaniesPage({
             <ul className="divide-y divide-neutral-100 dark:divide-neutral-900">
               {rows.map((company) => {
                 const siteUrl = safeSiteUrl(company.site);
+                const issues = issuesFor(company.ext_id);
                 const secondaryLine = [company.address, company.phone]
                   .filter((value): value is string => Boolean(value))
                   .join(' · ');
                 return (
                   <li key={company.id} className="px-3 py-3">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-medium">{company.name}</span>
+                      <span className="inline-flex items-center gap-1.5 font-medium">
+                        {company.name}
+                        <RowIssuesMarker companyName={company.name} issues={issues} />
+                      </span>
                       <span className="shrink-0 text-xs tabular-nums text-neutral-500">
                         {formatRating(company.rating)} · {company.reviews_count}
                       </span>
